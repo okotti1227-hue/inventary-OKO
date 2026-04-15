@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Инвентаризация Cloud</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; color: #333; padding-bottom: 100px;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 15px; }
+        header { text-align: center; color: white; margin-bottom: 20px; padding-top: 10px; }
+        header h1 { font-size: 1.8rem; margin-bottom: 5px; }
+        header p { font-size: 0.9rem; opacity: 0.9; }
+
+        .sync-status {
+            position: fixed; top: 10px; right: 10px;
+            padding: 8px 15px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: 600; z-index: 1000;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sync-online { background: #d4edda; color: #155724; }
+        .sync-offline { background: #f8d7da; color: #721c24; }
+        .sync-syncing { background: #fff3cd; color: #856404; }
+
+        .stats-bar {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 10px; margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.95); padding: 10px;
+            border-radius: 12px; text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .stat-number { font-size: 1.5rem; font-weight: bold; color: #667eea; }
+        .stat-label { font-size: 0.7rem; color: #666; margin-top: 3px; }
+
+        .fab-container { position: fixed; bottom: 20px; right: 20px; z-index: 100; }
+        .fab {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; font-size: 1.5rem;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.95); }
+        .fab-menu {
+            position: absolute; bottom: 70px; right: 0;
+            display: none; flex-direction: column; gap: 10px;
+        }
+        .fab-menu.active { display: flex; }
+        .fab-item {
+            background: white; color: #333; border: none;
+            padding: 12px 20px; border-radius: 25px;
+            font-size: 0.9rem; cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            white-space: nowrap; display: flex;
+            align-items: center; gap: 8px;
+        }
+
+        .card {
+            background: white; border-radius: 16px;
+            padding: 20px; margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            font-size: 1.1rem; font-weight: 600;
+            margin-bottom: 15px; color: #333;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block; font-size: 0.85rem;
+            color: #666; margin-bottom: 5px; font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px;
+            border: 2px solid #e0e0e0; border-radius: 10px;
+            font-size: 1rem; font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 20px; border: none; border-radius: 10px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; width: 100%; margin-bottom: 10px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-danger { background: #dc3545; color: white; }
+
+        .items-list { display: flex; flex-direction: column; gap: 15px; }
+        .item-card {
+            background: white; border-radius: 16px;
+            overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .item-image {
+            width: 100%; height: 180px; object-fit: cover; background: #f0f0f0;
+        }
+        .item-content { padding: 15px; }
+        .item-header {
+            display: flex; justify-content: space-between;
+            align-items: start; margin-bottom: 10px;
+        }
+        .item-title {
+            font-size: 1.1rem; font-weight: 600; color: #333; flex: 1;
+        }
+        .status-badge {
+            padding: 4px 10px; border-radius: 12px;
+            font-size: 0.75rem; font-weight: 600;
+            text-transform: uppercase; margin-left: 8px;
+        }
+        .status-ok { background: #d4edda; color: #155724; }
+        .status-repair { background: #fff3cd; color: #856404; }
+        .status-decommissioned { background: #f8d7da; color: #721c24; }
+        .item-meta {
+            font-size: 0.85rem; color: #666; margin-bottom: 10px;
+        }
+        .item-meta-row {
+            display: flex; align-items: center;
+            gap: 5px; margin-bottom: 5px;
+        }
+        .qr-section {
+            display: flex; align-items: center; gap: 15px;
+            padding-top: 15px; border-top: 1px solid #eee;
+            margin-top: 10px;
+        }
+        .qr-code { width: 70px; height: 70px; flex-shrink: 0; }
+        .qr-info { flex: 1; }
+        .qr-id {
+            font-family: monospace; font-size: 0.8rem;
+            color: #999; word-break: break-all;
+        }
+        .qr-hint {
+            font-size: 0.75rem; color: #667eea;
+            margin-top: 5px; font-weight: 500;
+        }
+        .item-actions {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 8px; margin-top: 15px;
+        }
+        .btn-small {
+            padding: 8px; font-size: 0.8rem; margin: 0;
+        }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.9);
+            z-index: 1000; overflow-y: auto;
+        }
+        .modal.active { display: block; }
+        .modal-content { background: white; min-height: 100vh; }
+        .modal-header {
+            position: sticky; top: 0; background: white;
+            padding: 15px; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between;
+            align-items: center; z-index: 10;
+        }
+        .modal-body { padding: 15px; }
+        .close-btn {
+            background: none; border: none;
+            font-size: 1.5rem; cursor: pointer;
+            color: #666; padding: 5px;
+        }
+
+        .scanner-container { padding: 20px; text-align: center; }
+        #reader { width: 100%; max-width: 400px; margin: 0 auto; }
+        .scan-instruction {
+            background: #e8eaff; color: #667eea;
+            padding: 15px; border-radius: 12px;
+            margin-bottom: 20px; font-size: 0.9rem;
+            text-align: left;
+        }
+        .scan-result {
+            background: #d4edda; color: #155724;
+            padding: 20px; border-radius: 12px;
+            margin-top: 20px; display: none;
+        }
+        .scan-result.active { display: block; }
+
+        .history-timeline {
+            position: relative; padding-left: 25px;
+            margin-top: 15px;
+        }
+        .history-timeline::before {
+            content: ''; position: absolute;
+            left: 6px; top: 0; bottom: 0;
+            width: 2px; background: #e0e0e0;
+        }
+        .history-item {
+            position: relative; margin-bottom: 15px;
+            padding: 12px; background: #f8f9fa;
+            border-radius: 10px; font-size: 0.9rem;
+        }
+        .history-item::before {
+            content: ''; position: absolute;
+            left: -23px; top: 15px;
+            width: 10px; height: 10px;
+            background: #667eea; border-radius: 50%;
+            border: 2px solid white;
+        }
+        .history-date {
+            font-size: 0.75rem; color: #999;
+            margin-bottom: 3px;
+        }
+        .history-action { font-weight: 600; color: #333; }
+        .history-details {
+            font-size: 0.85rem; color: #666; margin-top: 3px;
+        }
+
+        .tabs {
+            display: flex; gap: 5px;
+            margin-bottom: 15px; overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        .tab {
+            padding: 10px 15px; background: #f0f0f0;
+            border: none; border-radius: 20px;
+            font-size: 0.85rem; cursor: pointer;
+            white-space: nowrap;
+        }
+        .tab.active { background: #667eea; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .move-form {
+            background: #f8f9fa; padding: 15px;
+            border-radius: 12px;
+        }
+        .form-row {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .filters {
+            display: flex; gap: 8px;
+            margin-bottom: 15px; overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        .filter-btn {
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.9);
+            border: none; border-radius: 20px;
+            font-size: 0.85rem; cursor: pointer;
+            white-space: nowrap;
+        }
+        .filter-btn.active { background: #667eea; color: white; }
+
+        .search-box {
+            width: 100%; padding: 12px 15px;
+            border: none; border-radius: 25px;
+            background: rgba(255,255,255,0.9);
+            margin-bottom: 15px; font-size: 1rem;
+        }
+        .search-box:focus {
+            outline: none; box-shadow: 0 0 0 2px #667eea;
+        }
+
+        .empty-state {
+            text-align: center; padding: 40px 20px; color: white;
+        }
+        .empty-state h3 { font-size: 1.3rem; margin-bottom: 10px; }
+
+        .file-input-wrapper { position: relative; overflow: hidden; }
+        .file-input-wrapper input[type=file] { position: absolute; left: -9999px; }
+        .file-input-label {
+            display: block; padding: 15px;
+            background: #f8f9fa; border: 2px dashed #667eea;
+            border-radius: 10px; text-align: center;
+            cursor: pointer; font-size: 0.9rem; color: #666;
+        }
+        .preview-image {
+            max-width: 100%; max-height: 200px;
+            border-radius: 10px; margin-top: 10px; display: none;
+        }
+
+        .data-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .data-actions .btn { flex: 1; min-width: 140px; margin: 0; }
+
+        .setup-notice {
+            background: #fff3cd; border-left: 4px solid #ffc107;
+            padding: 15px; border-radius: 8px;
+            margin-bottom: 20px; font-size: 0.9rem;
+        }
+        .setup-notice h4 { margin-bottom: 10px; color: #856404; }
+        .setup-notice ol { margin-left: 20px; }
+        .setup-notice li { margin-bottom: 5px; }
+
+        @media (max-width: 480px) {
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .stat-number { font-size: 1.2rem; }
+            .item-actions { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sync Status Indicator -->
+    <div id="syncStatus" class="sync-status sync-offline" style="display: none;">
+        <span id="syncIcon">⚠️</span>
+        <span id="syncText">Offline</span>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>📦 Инвентаризация Cloud</h1>
+            <p>Синхронизация в реальном времени</p>
+        </header>
+
+        <!-- Setup Notice (shown until Firebase configured) -->
+        <div id="setupNotice" class="setup-notice">
+            <h4>⚠️ Требуется настройка Firebase</h4>
+            <ol>
+                <li>Создайте проект на <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a></li>
+                <li>Включите Realtime Database</li>
+                <li>Скопируйте конфигурацию в код (строка 520)</li>
+                <li>Обновите страницу</li>
+            </ol>
+            <button class="btn btn-primary" onclick="showSetupModal()" style="margin-top: 10px;">
+                🔧 Показать инструкцию
+            </button>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-number" id="totalItems">0</div>
+                <div class="stat-label">Всего</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="okItems">0</div>
+                <div class="stat-label">✅ ОК</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="repairItems">0</div>
+                <div class="stat-label">🔧 Ремонт</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="overdueItems">0</div>
+                <div class="stat-label">⚠️ Просроч</div>
+            </div>
+        </div>
+
+        <input type="text" class="search-box" id="searchInput" placeholder="🔍 Поиск..." onkeyup="renderItems()">
+
+        <div class="filters" id="filterContainer">
+            <button class="filter-btn active" onclick="setFilter('all')">Все</button>
+            <button class="filter-btn" onclick="setFilter('ok')">✅ В порядке</button>
+            <button class="filter-btn" onclick="setFilter('repair')">🔧 В ремонте</button>
+            <button class="filter-btn" onclick="setFilter('decommissioned')">❌ Списано</button>
+        </div>
+
+        <div id="itemsContainer" class="items-list"></div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <h3>📭 Нет предметов</h3>
+            <p>Нажмите + чтобы добавить</p>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab-container">
+        <div class="fab-menu" id="fabMenu">
+            <button class="fab-item" onclick="openAddModal()">➕ Добавить</button>
+            <button class="fab-item" onclick="openScanner()">📱 Сканировать</button>
+            <button class="fab-item" onclick="openDataModal()">💾 Данные</button>
+        </div>
+        <button class="fab" onclick="toggleFab()">+</button>
+    </div>
+
+    <!-- Modals -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>➕ Добавить предмет</h2>
+                <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addItemForm">
+                    <div class="form-group">
+                        <label>Название *</label>
+                        <input type="text" id="itemName" required placeholder="Например: MacBook Pro">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Категория</label>
+                            <select id="itemCategory">
+                                <option value="Техника">Техника</option>
+                                <option value="Мебель">Мебель</option>
+                                <option value="Инструменты">Инструменты</option>
+                                <option value="Оборудование">Оборудование</option>
+                                <option value="Другое">Другое</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Локация</label>
+                            <select id="itemLocation">
+                                <option value="Зал">Зал</option>
+                                <option value="Кухня">Кухня</option>
+                                <option value="Офис">Офис</option>
+                                <option value="Склад">Склад</option>
+                                <option value="Ремонтная зона">Ремонтная зона</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Статус</label>
+                            <select id="itemStatus">
+                                <option value="ok">✅ В порядке</option>
+                                <option value="repair">🔧 В ремонте</option>
+                                <option value="decommissioned">❌ Списано</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ответственный</label>
+                            <input type="text" id="itemResponsible" placeholder="Иванов И.И.">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Дата инвентаризации</label>
+                        <input type="date" id="itemInventoryDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Фотография</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="itemPhoto" accept="image/*" onchange="previewImage(this)">
+                            <label for="itemPhoto" class="file-input-label">📷 Нажмите для загрузки фото</label>
+                        </div>
+                        <img id="imagePreview" class="preview-image">
+                    </div>
+                    <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="scannerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📱 Сканирование</h2>
+                <button class="close-btn" onclick="closeScanner()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="scan-instruction">
+                    <strong>Как сканировать:</strong><br>
+                    1. Наведите камеру на QR-код<br>
+                    2. Дождитесь звукового сигнала<br>
+                    3. Карточка откроется автоматически
+                </div>
+                <div class="scanner-container">
+                    <div id="reader"></div>
+                </div>
+                <div id="scanResult" class="scan-result">
+                    <strong>✅ Найдено!</strong><br>
+                    <span id="scanResultText"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dataModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>💾 Управление данными</h2>
+                <button class="close-btn" onclick="closeModal('dataModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="card">
+                    <div class="card-title">📊 Экспорт</div>
+                    <div class="data-actions">
+                        <button class="btn btn-success" onclick="exportToExcel()">📊 Excel</button>
+                        <button class="btn btn-secondary" onclick="exportData()">💾 JSON</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">📤 Импорт</div>
+                    <div class="file-input-wrapper" style="margin-bottom: 10px;">
+                        <input type="file" id="importFile" accept=".json" onchange="importData(this)">
+                        <label for="importFile" class="file-input-label">Выберите файл JSON</label>
+                    </div>
+                    <p style="font-size: 0.8rem; color: #666;">⚠️ Импорт заменит все данные в облаке!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <div id="itemModalContent"></div>
+        </div>
+    </div>
+
+    <div id="setupModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔧 Настройка Firebase</h2>
+                <button class="close-btn" onclick="closeModal('setupModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="card">
+                    <div class="card-title">Шаг 1: Создайте проект</div>
+                    <p style="font-size: 0.9rem; color: #666; line-height: 1.5;">
+                        1. Перейдите на <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a><br>
+                        2. Нажмите "Create project"<br>
+                        3. Введите название (например "Inventory")<br>
+                        4. Отключите Google Analytics (для простоты)<br>
+                        5. Нажмите "Create project"
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="card-title">Шаг 2: Включите Realtime Database</div>
+                    <p style="font-size: 0.9rem; color: #666; line-height: 1.5;">
+                        1. В меню слева выберите "Realtime Database"<br>
+                        2. Нажмите "Create Database"<br>
+                        3. Выберите регион (europe-west1 для России)<br>
+                        4. Нажмите "Next"<br>
+                        5. Выберите "Start in test mode" (пока)<br>
+                        6. Нажмите "Enable"
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="card-title">Шаг 3: Получите конфигурацию</div>
+                    <p style="font-size: 0.9rem; color: #666; line-height: 1.5;">
+                        1. Нажмите на значок шестеренки ⚙️ рядом с "Project Overview"<br>
+                        2. Выберите "Project settings"<br>
+                        3. В разделе "Your apps" нажмите "</>" (Web)<br>
+                        4. Зарегистрируйте приложение (nickname: inventory)<br>
+                        5. Скопируйте блок кода с firebaseConfig<br>
+                        6. Вставьте в этот файл вместо текущего конфига
+                    </p>
+                </div>
+                <div class="card" style="background: #d4edda;">
+                    <div class="card-title" style="color: #155724;">✅ Готово!</div>
+                    <p style="font-size: 0.9rem; color: #155724;">
+                        После вставки конфигурации обновите страницу. Данные будут синхронизироваться между всеми устройствами автоматически!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // FIREBASE CONFIGURATION - ЗАМЕНИТЕ ЭТОТ БЛОК
+        // ==========================================
+        const firebaseConfig = {
+            // Вставьте вашу конфигурацию сюда:
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // ==========================================
+        // GLOBAL VARIABLES
+        // ==========================================
+        let db = null;
+        let items = [];
+        let html5QrCode = null;
+        let currentFilter = 'all';
+        let isOnline = false;
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if Firebase is configured
+            if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                document.getElementById('setupNotice').style.display = 'block';
+                updateSyncStatus('offline', 'Требуется настройка Firebase');
+                return;
+            }
+
+            // Initialize Firebase
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+
+                // Enable offline persistence
+                db.goOnline();
+
+                // Listen for connection state
+                const connectedRef = db.ref('.info/connected');
+                connectedRef.on('value', (snap) => {
+                    isOnline = snap.val();
+                    if (isOnline) {
+                        updateSyncStatus('online', 'Онлайн');
+                    } else {
+                        updateSyncStatus('offline', 'Офлайн режим');
+                    }
+                });
+
+                // Listen for data changes (REAL-TIME SYNC!)
+                const itemsRef = db.ref('inventory');
+                itemsRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    items = data ? Object.values(data) : [];
+                    renderItems();
+                    updateStats();
+                    document.getElementById('setupNotice').style.display = 'none';
+                });
+
+                // Set default date
+                const nextYear = new Date();
+                nextYear.setFullYear(nextYear.getFullYear() + 1);
+                document.getElementById('itemInventoryDate').valueAsDate = nextYear;
+
+            } catch (error) {
+                console.error('Firebase init error:', error);
+                updateSyncStatus('offline', 'Ошибка инициализации');
+                document.getElementById('setupNotice').style.display = 'block';
+            }
+        });
+
+        // Update sync status indicator
+        function updateSyncStatus(status, text) {
+            const indicator = document.getElementById('syncStatus');
+            const icon = document.getElementById('syncIcon');
+            const label = document.getElementById('syncText');
+
+            indicator.style.display = 'flex';
+            indicator.className = 'sync-status sync-' + status;
+
+            const icons = {
+                'online': '🟢',
+                'offline': '⚠️',
+                'syncing': '🔄'
+            };
+
+            icon.textContent = icons[status] || '⚠️';
+            label.textContent = text;
+        }
+
+        // Show setup modal
+        function showSetupModal() {
+            document.getElementById('setupModal').classList.add('active');
+        }
+
+        // ==========================================
+        // UTILITY FUNCTIONS
+        // ==========================================
+        function generateId() {
+            return 'INV-' + Date.now().toString(36).toUpperCase().slice(-6);
+        }
+
+        function toggleFab() {
+            document.getElementById('fabMenu').classList.toggle('active');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.fab-container')) {
+                document.getElementById('fabMenu').classList.remove('active');
+            }
+        });
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            const label = input.nextElementSibling;
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    label.textContent = '✅ Фото загружено';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ==========================================
+        // CRUD OPERATIONS
+        // ==========================================
+        document.getElementById('addItemForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if (!db) {
+                alert('Firebase не настроен!');
+                return;
+            }
+
+            const fileInput = document.getElementById('itemPhoto');
+            const processItem = (imageData) => {
+                updateSyncStatus('syncing', 'Сохранение...');
+
+                const now = new Date().toISOString();
+                const inventoryDate = document.getElementById('itemInventoryDate').value;
+
+                const item = {
+                    id: generateId(),
+                    name: document.getElementById('itemName').value,
+                    category: document.getElementById('itemCategory').value,
+                    location: document.getElementById('itemLocation').value,
+                    status: document.getElementById('itemStatus').value,
+                    responsible: document.getElementById('itemResponsible').value || 'Не назначен',
+                    inventoryDate: inventoryDate || null,
+                    lastInventoryCheck: null,
+                    photo: imageData || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect fill="%23f0f0f0" width="400" height="300"/><text fill="%23999" x="50%25" y="50%25" text-anchor="middle" font-size="18">Нет фото</text></svg>',
+                    createdAt: now,
+                    updatedAt: now,
+                    history: [{
+                        date: now,
+                        action: 'Создание',
+                        details: `Создан в "${document.getElementById('itemLocation').value}"`,
+                        responsible: document.getElementById('itemResponsible').value || 'Не назначен'
+                    }]
+                };
+
+                // Save to Firebase (triggers real-time sync!)
+                db.ref('inventory/' + item.id).set(item)
+                    .then(() => {
+                        updateSyncStatus('online', 'Сохранено');
+                        setTimeout(() => updateSyncStatus('online', 'Онлайн'), 2000);
+
+                        // Reset form
+                        e.target.reset();
+                        document.getElementById('imagePreview').style.display = 'none';
+                        document.querySelector('.file-input-label').textContent = '📷 Нажмите для загрузки фото';
+                        closeModal('addModal');
+
+                        // Reset date
+                        const nextYear = new Date();
+                        nextYear.setFullYear(nextYear.getFullYear() + 1);
+                        document.getElementById('itemInventoryDate').valueAsDate = nextYear;
+
+                        showNotification('✅ Предмет добавлен!');
+                    })
+                    .catch((error) => {
+                        console.error('Error saving:', error);
+                        updateSyncStatus('offline', 'Ошибка сохранения');
+                        alert('Ошибка сохранения: ' + error.message);
+                    });
+            };
+
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => processItem(e.target.result);
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                processItem(null);
+            }
+        });
+
+        function updateItem(id, updates) {
+            if (!db) return;
+
+            updateSyncStatus('syncing', 'Обновление...');
+
+            updates.updatedAt = new Date().toISOString();
+
+            db.ref('inventory/' + id).update(updates)
+                .then(() => {
+                    updateSyncStatus('online', 'Обновлено');
+                    setTimeout(() => updateSyncStatus('online', 'Онлайн'), 2000);
+                })
+                .catch((error) => {
+                    console.error('Error updating:', error);
+                    updateSyncStatus('offline', 'Ошибка обновления');
+                });
+        }
+
+        function deleteItem(id) {
+            if (!db) return;
+
+            if (confirm('Удалить этот предмет?')) {
+                updateSyncStatus('syncing', 'Удаление...');
+
+                db.ref('inventory/' + id).remove()
+                    .then(() => {
+                        updateSyncStatus('online', 'Удалено');
+                        setTimeout(() => updateSyncStatus('online', 'Онлайн'), 2000);
+                        showNotification('✅ Предмет удален');
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting:', error);
+                        updateSyncStatus('offline', 'Ошибка удаления');
+                    });
+            }
+        }
+
+        // ==========================================
+        // NOTIFICATION
+        // ==========================================
+        function showNotification(text) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 12px 25px; border-radius: 25px; font-weight: 600; z-index: 10000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);';
+            div.textContent = text;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2000);
+        }
+
+        // ==========================================
+        // STATISTICS
+        // ==========================================
+        function updateStats() {
+            document.getElementById('totalItems').textContent = items.length;
+            document.getElementById('okItems').textContent = items.filter(i => i.status === 'ok').length;
+            document.getElementById('repairItems').textContent = items.filter(i => i.status === 'repair').length;
+
+            const today = new Date().toISOString().split('T')[0];
+            const overdue = items.filter(i => {
+                if (!i.inventoryDate || i.status === 'decommissioned') return false;
+                return i.inventoryDate < today;
+            }).length;
+            document.getElementById('overdueItems').textContent = overdue;
+        }
+
+        // ==========================================
+        // RENDERING
+        // ==========================================
+        function getStatusText(status) {
+            const map = { 'ok': '✅ В порядке', 'repair': '🔧 В ремонте', 'decommissioned': '❌ Списано' };
+            return map[status] || status;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return 'Не указана';
+            return new Date(dateStr).toLocaleDateString('ru-RU');
+        }
+
+        function isInventoryOverdue(item) {
+            if (!item.inventoryDate || item.status === 'decommissioned') return false;
+            const today = new Date().toISOString().split('T')[0];
+            return item.inventoryDate < today;
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderItems();
+        }
+
+        function renderItems() {
+            const container = document.getElementById('itemsContainer');
+            const emptyState = document.getElementById('emptyState');
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+
+            let filtered = items.filter(item => {
+                if (currentFilter !== 'all' && item.status !== currentFilter) return false;
+                if (searchQuery && !item.name.toLowerCase().includes(searchQuery) && 
+                    !item.id.toLowerCase().includes(searchQuery) &&
+                    !item.responsible.toLowerCase().includes(searchQuery)) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = items.length === 0 ? 'block' : 'none';
+                if (items.length > 0) {
+                    container.innerHTML = '<div style="text-align: center; color: white; padding: 40px;">Ничего не найдено</div>';
+                }
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            container.innerHTML = filtered.map(item => {
+                const qrId = 'qr-' + item.id.replace(/[^a-zA-Z0-9]/g, '');
+                const overdue = isInventoryOverdue(item);
+
+                setTimeout(() => {
+                    const qrContainer = document.getElementById(qrId);
+                    if (qrContainer) {
+                        qrContainer.innerHTML = '';
+                        // Generate QR with JSON data
+                        const qrData = JSON.stringify({
+                            id: item.id,
+                            name: item.name,
+                            type: 'inventory_item'
+                        });
+
+                        new QRCode(qrContainer, {
+                            text: qrData,
+                            width: 70,
+                            height: 70,
+                            colorDark: '#333',
+                            colorLight: '#fff',
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    }
+                }, 0);
+
+                return `
+                    <div class="item-card">
+                        <img src="${item.photo}" alt="${item.name}" class="item-image" onclick="showItemDetail('${item.id}')">
+                        <div class="item-content">
+                            <div class="item-header">
+                                <div class="item-title">${item.name}</div>
+                                <span class="status-badge status-${item.status}">${getStatusText(item.status).split(' ')[0]}</span>
+                            </div>
+                            <div class="item-meta">
+                                <div class="item-meta-row">📍 ${item.location}</div>
+                                <div class="item-meta-row">👤 ${item.responsible}</div>
+                                <div class="item-meta-row">📅 ${formatDate(item.inventoryDate)} ${overdue ? '(просрочено!)' : ''}</div>
+                            </div>
+                            <div class="qr-section">
+                                <div id="${qrId}" class="qr-code"></div>
+                                <div class="qr-info">
+                                    <div class="qr-id">${item.id}</div>
+                                    <div class="qr-hint">Сканируйте в приложении ↗</div>
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-secondary btn-small" onclick="showItemDetail('${item.id}')">👁️ Просмотр</button>
+                                <button class="btn btn-success btn-small" onclick="quickInventory('${item.id}')">✓ Инвентариз.</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // ITEM DETAILS & ACTIONS
+        // ==========================================
+        function quickInventory(id) {
+            const item = items.find(i => i.id === id);
+            if (!item || !db) return;
+
+            const now = new Date().toISOString();
+            const nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+
+            const newHistory = item.history || [];
+            newHistory.unshift({
+                date: now,
+                action: 'Инвентаризация',
+                details: `Проверка в "${item.location}"`,
+                responsible: item.responsible
+            });
+
+            updateItem(id, {
+                lastInventoryCheck: now,
+                inventoryDate: nextYear.toISOString().split('T')[0],
+                history: newHistory
+            });
+
+            showNotification(`✅ Инвентаризация проведена!`);
+        }
+
+        function showItemDetail(id) {
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            const modal = document.getElementById('itemModal');
+            const content = document.getElementById('itemModalContent');
+            const overdue = isInventoryOverdue(item);
+
+            const historyHtml = item.history && item.history.length > 0 
+                ? item.history.map(h => `
+                    <div class="history-item">
+                        <div class="history-date">${new Date(h.date).toLocaleString('ru-RU')}</div>
+                        <div class="history-action">${h.action}</div>
+                        <div class="history-details">${h.details}</div>
+                        ${h.responsible ? `<div style="margin-top: 5px; font-size: 0.8rem; color: #667eea;">👤 ${h.responsible}</div>` : ''}
+                    </div>
+                `).join('')
+                : '<p style="color: #999; text-align: center; padding: 20px;">История пуста</p>';
+
+            content.innerHTML = `
+                <div class="modal-header">
+                    <h2>${item.name}</h2>
+                    <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <img src="${item.photo}" style="width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 15px;">
+
+                    ${overdue ? `<div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin-bottom: 15px;">⚠️ Инвентаризация просрочена!</div>` : ''}
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <div class="card" style="padding: 12px; margin: 0;">
+                            <div style="font-size: 0.8rem; color: #666;">Статус</div>
+                            <div style="font-weight: 600; margin-top: 3px;">${getStatusText(item.status)}</div>
+                        </div>
+                        <div class="card" style="padding: 12px; margin: 0;">
+                            <div style="font-size: 0.8rem; color: #666;">Локация</div>
+                            <div style="font-weight: 600; margin-top: 3px;">📍 ${item.location}</div>
+                        </div>
+                        <div class="card" style="padding: 12px; margin: 0;">
+                            <div style="font-size: 0.8rem; color: #666;">Ответственный</div>
+                            <div style="font-weight: 600; margin-top: 3px;">👤 ${item.responsible}</div>
+                        </div>
+                        <div class="card" style="padding: 12px; margin: 0;">
+                            <div style="font-size: 0.8rem; color: #666;">Инвентаризация</div>
+                            <div style="font-weight: 600; margin-top: 3px;">📅 ${formatDate(item.inventoryDate)}</div>
+                        </div>
+                    </div>
+
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('actions')">Действия</button>
+                        <button class="tab" onclick="switchTab('history')">История</button>
+                        <button class="tab" onclick="switchTab('move')">Перемещение</button>
+                    </div>
+
+                    <div id="tab-actions" class="tab-content active">
+                        <button class="btn btn-success" onclick="quickInventory('${item.id}'); closeModal('itemModal');">✓ Провести инвентаризацию</button>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                            <button class="btn btn-secondary" onclick="changeStatus('${item.id}', 'ok')">✅ В порядке</button>
+                            <button class="btn btn-secondary" onclick="changeStatus('${item.id}', 'repair')">🔧 В ремонт</button>
+                            <button class="btn btn-secondary" onclick="changeStatus('${item.id}', 'decommissioned')">❌ Списать</button>
+                            <button class="btn btn-warning" onclick="printItem('${item.id}')">🖨️ Печать</button>
+                        </div>
+                        <button class="btn btn-danger" onclick="deleteItem('${item.id}'); closeModal('itemModal');" style="margin-top: 10px;">🗑️ Удалить предмет</button>
+                    </div>
+
+                    <div id="tab-history" class="tab-content">
+                        <div class="history-timeline">${historyHtml}</div>
+                    </div>
+
+                    <div id="tab-move" class="tab-content">
+                        <div class="move-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Новая локация</label>
+                                    <select id="moveLocation">
+                                        <option value="Зал">Зал</option>
+                                        <option value="Кухня">Кухня</option>
+                                        <option value="Офис">Офис</option>
+                                        <option value="Склад">Склад</option>
+                                        <option value="Ремонтная зона">Ремонтная зона</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Новый ответственный</label>
+                                    <input type="text" id="moveResponsible" value="${item.responsible}" placeholder="ФИО">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Причина</label>
+                                <input type="text" id="moveReason" placeholder="Например: Переезд">
+                            </div>
+                            <button class="btn btn-primary" onclick="moveItem('${item.id}')" style="width: 100%;">🚚 Переместить</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        function moveItem(id) {
+            const item = items.find(i => i.id === id);
+            if (!item || !db) return;
+
+            const newLocation = document.getElementById('moveLocation').value;
+            const newResponsible = document.getElementById('moveResponsible').value || item.responsible;
+            const reason = document.getElementById('moveReason').value || 'Без причины';
+
+            const oldLocation = item.location;
+            const oldResponsible = item.responsible;
+
+            const newHistory = item.history || [];
+            const now = new Date().toISOString();
+
+            if (oldLocation !== newLocation) {
+                newHistory.unshift({
+                    date: now,
+                    action: 'Перемещение',
+                    details: `"${oldLocation}" → "${newLocation}". Причина: ${reason}`,
+                    responsible: newResponsible
+                });
+            }
+
+            if (oldResponsible !== newResponsible) {
+                newHistory.unshift({
+                    date: now,
+                    action: 'Смена ответственного',
+                    details: `"${oldResponsible}" → "${newResponsible}"`,
+                    responsible: newResponsible
+                });
+            }
+
+            updateItem(id, {
+                location: newLocation,
+                responsible: newResponsible,
+                history: newHistory
+            });
+
+            showNotification('✅ Предмет перемещен!');
+            closeModal('itemModal');
+        }
+
+        function changeStatus(id, status) {
+            const item = items.find(i => i.id === id);
+            if (!item || !db) return;
+
+            const oldStatus = item.status;
+            const newHistory = item.history || [];
+
+            newHistory.unshift({
+                date: new Date().toISOString(),
+                action: 'Смена статуса',
+                details: `"${getStatusText(oldStatus)}" → "${getStatusText(status)}"`,
+                responsible: item.responsible
+            });
+
+            updateItem(id, { status: status, history: newHistory });
+            showNotification('✅ Статус изменен!');
+            closeModal('itemModal');
+        }
+
+        function printItem(id) {
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            const qrData = JSON.stringify({
+                id: item.id,
+                name: item.name,
+                type: 'inventory_item'
+            });
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>${item.name}</title>
+                    <style>
+                        body { font-family: Arial; text-align: center; padding: 20px; }
+                        .container { max-width: 300px; margin: 0 auto; }
+                        img { max-width: 200px; border-radius: 10px; margin-bottom: 15px; }
+                        .qr { margin: 15px 0; }
+                        .info { font-size: 12px; color: #666; margin-top: 15px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h3>${item.name}</h3>
+                        <img src="${item.photo}" onerror="this.style.display='none'">
+                        <div class="qr" id="qr"></div>
+                        <div class="info">
+                            <strong>ID:</strong> ${item.id}<br>
+                            <strong>Локация:</strong> ${item.location}<br>
+                            <strong>Ответственный:</strong> ${item.responsible}
+                        </div>
+                    </div>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+                    <script>
+                        new QRCode(document.getElementById('qr'), {
+                            text: '${qrData.replace(/'/g, "\'")}',
+                            width: 150,
+                            height: 150
+                        });
+                        setTimeout(() => window.print(), 500);
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        // ==========================================
+        // SCANNER
+        // ==========================================
+        function openScanner() {
+            document.getElementById('fabMenu').classList.remove('active');
+            document.getElementById('scannerModal').classList.add('active');
+
+            html5QrCode = new Html5Qrcode("reader");
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText) => {
+                    let scannedId = null;
+                    let scannedName = '';
+
+                    try {
+                        const data = JSON.parse(decodedText);
+                        if (data.type === 'inventory_item' && data.id) {
+                            scannedId = data.id;
+                            scannedName = data.name || '';
+                        }
+                    } catch (e) {
+                        scannedId = decodedText.trim();
+                    }
+
+                    if (!scannedId) {
+                        showNotification('❌ Неверный QR-код');
+                        return;
+                    }
+
+                    html5QrCode.stop();
+                    closeScanner();
+
+                    let item = items.find(i => i.id === scannedId);
+                    if (!item) item = items.find(i => i.id.toLowerCase() === scannedId.toLowerCase());
+                    if (!item) item = items.find(i => scannedId.includes(i.id) || i.id.includes(scannedId));
+
+                    if (item) {
+                        const resultDiv = document.getElementById('scanResult');
+                        const resultText = document.getElementById('scanResultText');
+                        resultText.textContent = `${item.name} (${item.location})`;
+                        resultDiv.classList.add('active');
+
+                        setTimeout(() => {
+                            resultDiv.classList.remove('active');
+                            showItemDetail(item.id);
+                        }, 1000);
+                    } else {
+                        alert('Предмет не найден\nID: ' + scannedId);
+                    }
+                },
+                (error) => {}
+            ).catch(err => {
+                console.error('Scanner error:', err);
+                alert('Не удалось запустить камеру');
+            });
+        }
+
+        function closeScanner() {
+            document.getElementById('scannerModal').classList.remove('active');
+            document.getElementById('scanResult').classList.remove('active');
+            if (html5QrCode) {
+                html5QrCode.stop().catch(() => {});
+                html5QrCode = null;
+            }
+        }
+
+        // ==========================================
+        // IMPORT/EXPORT
+        // ==========================================
+        function exportToExcel() {
+            const data = items.map(item => ({
+                'ID': item.id,
+                'Название': item.name,
+                'Категория': item.category,
+                'Локация': item.location,
+                'Статус': getStatusText(item.status),
+                'Ответственный': item.responsible,
+                'Создан': formatDate(item.createdAt),
+                'Инвентаризация': formatDate(item.inventoryDate),
+                'Проверка': item.lastInventoryCheck ? formatDate(item.lastInventoryCheck) : 'Нет',
+                'История': item.history ? item.history.slice(0, 3).map(h => `${h.action} (${formatDate(h.date)})`).join('; ') : ''
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Инвентаризация');
+            ws['!cols'] = [
+                { wch: 20 }, { wch: 25 }, { wch: 12 }, { wch: 12 },
+                { wch: 15 }, { wch: 18 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 40 }
+            ];
+
+            XLSX.writeFile(wb, 'Инвентаризация_' + new Date().toISOString().split('T')[0] + '.xlsx');
+            showNotification('✅ Экспорт завершен!');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(items, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'inventory-backup-' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('✅ Бэкап сохранен!');
+        }
+
+        function importData(input) {
+            if (!input.files || !input.files[0]) return;
+
+            if (!db) {
+                alert('Firebase не настроен!');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        if (confirm(`Загрузить ${imported.length} предметов? Это заменит все данные в облаке!`)) {
+                            updateSyncStatus('syncing', 'Импорт...');
+
+                            const updates = {};
+                            imported.forEach(item => {
+                                updates[item.id] = item;
+                            });
+
+                            db.ref('inventory').set(updates)
+                                .then(() => {
+                                    updateSyncStatus('online', 'Импорт завершен');
+                                    setTimeout(() => updateSyncStatus('online', 'Онлайн'), 2000);
+                                    showNotification('✅ Данные загружены!');
+                                    closeModal('dataModal');
+                                })
+                                .catch((error) => {
+                                    console.error('Import error:', error);
+                                    updateSyncStatus('offline', 'Ошибка импорта');
+                                });
+                        }
+                    } else {
+                        alert('❌ Неверный формат файла');
+                    }
+                } catch (err) {
+                    alert('❌ Ошибка чтения файла: ' + err.message);
+                }
+            };
+            reader.readAsText(input.files[0]);
+            input.value = '';
+        }
+
+        // Close modals on outside click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                    if (modal.id === 'scannerModal') closeScanner();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

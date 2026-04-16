@@ -782,26 +782,33 @@
                 const qrId = 'qr-' + item.id.replace(/[^a-zA-Z0-9]/g, '');
                 const overdue = isInventoryOverdue(item);
 
+                // Generate QR code with delay to ensure DOM is ready
                 setTimeout(() => {
-                    const qrContainer = document.getElementById(qrId);
-                    if (qrContainer) {
-                        qrContainer.innerHTML = '';
-                        const qrData = JSON.stringify({
-                            id: item.id,
-                            name: item.name,
-                            type: 'inventory_item'
-                        });
+                    try {
+                        const qrContainer = document.getElementById(qrId);
+                        if (qrContainer && typeof QRCode !== 'undefined') {
+                            qrContainer.innerHTML = '';
+                            const qrData = JSON.stringify({
+                                id: item.id,
+                                name: item.name,
+                                type: 'inventory_item'
+                            });
 
-                        new QRCode(qrContainer, {
-                            text: qrData,
-                            width: 70,
-                            height: 70,
-                            colorDark: '#333',
-                            colorLight: '#fff',
-                            correctLevel: QRCode.CorrectLevel.H
-                        });
+                            new QRCode(qrContainer, {
+                                text: qrData,
+                                width: 70,
+                                height: 70,
+                                colorDark: '#333',
+                                colorLight: '#fff',
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        } else {
+                            console.error('QR container or QRCode library not found');
+                        }
+                    } catch (e) {
+                        console.error('QR generation error:', e);
                     }
-                }, 0);
+                }, 100);
 
                 return `
                     <div class="item-card">
@@ -1075,11 +1082,15 @@
                     </div>
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
                     <script>
-                        new QRCode(document.getElementById('qr'), {
-                            text: '${qrData.replace(/'/g, "\'")}',
-                            width: 150,
-                            height: 150
-                        });
+                        try {
+                            new QRCode(document.getElementById('qr'), {
+                                text: '${qrData.replace(/'/g, "\'")}',
+                                width: 150,
+                                height: 150
+                            });
+                        } catch(e) {
+                            console.error('Print QR error:', e);
+                        }
                         setTimeout(() => window.print(), 500);
                     <\/script>
                 </body>

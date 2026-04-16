@@ -838,6 +838,25 @@
                     </div>
                 `;
             }).join('');
+
+            // Generate QR codes after DOM update
+            setTimeout(() => {
+                console.log('QR generation started');
+                filtered.forEach(item => {
+                    const qrId = 'qr-' + item.id.replace(/[^a-zA-Z0-9]/g, '');
+                    const container = document.getElementById(qrId);
+                    if (container && window.QRCode) {
+                        try {
+                            container.innerHTML = '';
+                            new QRCode(container, {
+                                text: JSON.stringify({id: item.id, name: item.name, type: 'inventory_item'}),
+                                width: 70,
+                                height: 70
+                            });
+                        } catch(e) { console.error('QR error:', e); }
+                    }
+                });
+            }, 500);
         }
 
         // ==========================================

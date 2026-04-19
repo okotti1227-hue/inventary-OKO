@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Инвентаризация OKO</title>
+    <title>Инвентаризация Cloud</title>
 
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -298,6 +301,15 @@
         .data-actions { display: flex; gap: 10px; flex-wrap: wrap; }
         .data-actions .btn { flex: 1; min-width: 140px; margin: 0; }
 
+        .setup-notice {
+            background: #fff3cd; border-left: 4px solid #ffc107;
+            padding: 15px; border-radius: 8px;
+            margin-bottom: 20px; font-size: 0.9rem;
+        }
+        .setup-notice h4 { margin-bottom: 10px; color: #856404; }
+        .setup-notice ol { margin-left: 20px; }
+        .setup-notice li { margin-bottom: 5px; }
+
         @media (max-width: 480px) {
             .stats-bar { grid-template-columns: repeat(2, 1fr); }
             .stat-number { font-size: 1.2rem; }
@@ -307,16 +319,31 @@
     </style>
 </head>
 <body>
-    <div class="sync-status sync-online" id="syncStatus" style="display: none;">
-        <span id="syncIcon">🟢</span>
-        <span id="syncText">Онлайн</span>
+    <!-- Sync Status Indicator -->
+    <div id="syncStatus" class="sync-status sync-offline" style="display: none;">
+        <span id="syncIcon">⚠️</span>
+        <span id="syncText">Offline</span>
     </div>
 
     <div class="container">
         <header>
-            <h1>📦 Инвентаризация OKO</h1>
+            <h1>📦 Инвентаризация Cloud</h1>
             <p>Синхронизация в реальном времени</p>
         </header>
+
+        <!-- Setup Notice (shown until Firebase configured) -->
+        <div id="setupNotice" class="setup-notice">
+            <h4>⚠️ Требуется настройка Firebase</h4>
+            <ol>
+                <li>Создайте проект на <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a></li>
+                <li>Включите Realtime Database</li>
+                <li>Скопируйте конфигурацию в код (строка 520)</li>
+                <li>Обновите страницу</li>
+            </ol>
+            <button class="btn btn-primary" onclick="showSetupModal()" style="margin-top: 10px;">
+                🔧 Показать инструкцию
+            </button>
+        </div>
 
         <div class="stats-bar">
             <div class="stat-card">
@@ -354,6 +381,7 @@
         </div>
     </div>
 
+    <!-- Floating Action Button -->
     <div class="fab-container">
         <div class="fab-menu" id="fabMenu">
             <button class="fab-item" onclick="openAddModal()">➕ Добавить</button>
@@ -363,6 +391,7 @@
         <button class="fab" onclick="toggleFab()">+</button>
     </div>
 
+    <!-- Modals -->
     <div id="addModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -473,7 +502,7 @@
                         <input type="file" id="importFile" accept=".json" onchange="importData(this)">
                         <label for="importFile" class="file-input-label">Выберите файл JSON</label>
                     </div>
-                    <p style="font-size: 0.8rem; color: #666;">⚠️ Импорт заменит все данные!</p>
+                    <p style="font-size: 0.8rem; color: #666;">⚠️ Импорт заменит все данные в облаке!</p>
                 </div>
             </div>
         </div>
@@ -485,19 +514,67 @@
         </div>
     </div>
 
+    <div id="setupModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔧 Настройка Firebase</h2>
+                <button class="close-btn" onclick="closeModal('setupModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="card">
+                    <div class="card-title">Шаг 1: Создайте проект</div>
+                    <p style="font-size: 0.9rem; color: #666; line-height: 1.5;">
+                        1. Перейдите на <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a><br>
+                        2. Нажмите "Create project"<br>
+                        3. Введите название (например "Inventory")<br>
+                        4. Отключите Google Analytics (для простоты)<br>
+                        5. Нажмите "Create project"
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="card-title">Шаг 2: Включите Realtime Database</div>
+                    <p style="font-size: 0.9rem; color: #666; line-height: 1.5;">
+                        1. В меню слева выберите "Realtime Database"<br>
+                        2. Нажмите "Create Database"<br>
+                        3. Выберите регион (europe-west1 для России)<br>
+                        4. Нажмите "Next"<br>
+                        5. Выберите "Start in test mode" (пока)<br>
+                        6. Нажмите "Enable"
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="card-title">Шаг 3: Получите конфигурацию</div>
+                    <p style="font-size: 0.9rem; color: #666; line-height: 1.5;">
+                        1. Нажмите на значок шестеренки ⚙️ рядом с "Project Overview"<br>
+                        2. Выберите "Project settings"<br>
+                        3. В разделе "Your apps" нажмите "</>" (Web)<br>
+                        4. Зарегистрируйте приложение (nickname: inventory)<br>
+                        5. Скопируйте блок кода с firebaseConfig<br>
+                        6. Вставьте в этот файл вместо текущего конфига
+                    </p>
+                </div>
+                <div class="card" style="background: #d4edda;">
+                    <div class="card-title" style="color: #155724;">✅ Готово!</div>
+                    <p style="font-size: 0.9rem; color: #155724;">
+                        После вставки конфигурации обновите страницу. Данные будут синхронизироваться между всеми устройствами автоматически!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==========================================
-        // ВАША КОНФИГУРАЦИЯ FIREBASE
+        // FIREBASE CONFIGURATION - ЗАМЕНИТЕ ЭТОТ БЛОК
         // ==========================================
         const firebaseConfig = {
-            apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
-            authDomain: "inventory-oko.firebaseapp.com",
-            databaseURL: "https://inventory-oko-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "inventory-oko",
-            storageBucket: "inventory-oko.firebasestorage.app",
-            messagingSenderId: "528327448142",
-            appId: "1:528327448142:web:c0bde5327bd1464c81951f"
-        };
+  apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
+  authDomain: "inventory-oko.firebaseapp.com",
+  databaseURL: "https://inventory-oko-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "inventory-oko",
+  storageBucket: "inventory-oko.firebasestorage.app",
+  messagingSenderId: "528327448142",
+  appId: "1:528327448142:web:c0bde5327bd1464c81951f"};
 
         // ==========================================
         // GLOBAL VARIABLES
@@ -509,9 +586,16 @@
         let isOnline = false;
 
         // ==========================================
-        // INITIALIZATION - БЕЗ ПРОВЕРКИ, СРАЗУ РАБОТАЕТ
+        // INITIALIZATION
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
+            // Check if Firebase is configured
+            if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                document.getElementById('setupNotice').style.display = 'block';
+                updateSyncStatus('offline', 'Требуется настройка Firebase');
+                return;
+            }
+
             // Initialize Firebase
             try {
                 firebase.initializeApp(firebaseConfig);
@@ -538,6 +622,7 @@
                     items = data ? Object.values(data) : [];
                     renderItems();
                     updateStats();
+                    document.getElementById('setupNotice').style.display = 'none';
                 });
 
                 // Set default date
@@ -547,11 +632,12 @@
 
             } catch (error) {
                 console.error('Firebase init error:', error);
-                updateSyncStatus('offline', 'Ошибка подключения');
-                alert('Ошибка подключения к Firebase: ' + error.message);
+                updateSyncStatus('offline', 'Ошибка инициализации');
+                document.getElementById('setupNotice').style.display = 'block';
             }
         });
 
+        // Update sync status indicator
         function updateSyncStatus(status, text) {
             const indicator = document.getElementById('syncStatus');
             const icon = document.getElementById('syncIcon');
@@ -560,9 +646,19 @@
             indicator.style.display = 'flex';
             indicator.className = 'sync-status sync-' + status;
 
-            const icons = { 'online': '🟢', 'offline': '⚠️', 'syncing': '🔄' };
+            const icons = {
+                'online': '🟢',
+                'offline': '⚠️',
+                'syncing': '🔄'
+            };
+
             icon.textContent = icons[status] || '⚠️';
             label.textContent = text;
+        }
+
+        // Show setup modal
+        function showSetupModal() {
+            document.getElementById('setupModal').classList.add('active');
         }
 
         // ==========================================
@@ -608,7 +704,7 @@
             e.preventDefault();
 
             if (!db) {
-                alert('Ошибка: база данных не подключена');
+                alert('Firebase не настроен!');
                 return;
             }
 
@@ -639,16 +735,19 @@
                     }]
                 };
 
+                // Save to Firebase (triggers real-time sync!)
                 db.ref('inventory/' + item.id).set(item)
                     .then(() => {
                         updateSyncStatus('online', 'Сохранено');
                         setTimeout(() => updateSyncStatus('online', 'Онлайн'), 2000);
 
+                        // Reset form
                         e.target.reset();
                         document.getElementById('imagePreview').style.display = 'none';
                         document.querySelector('.file-input-label').textContent = '📷 Нажмите для загрузки фото';
                         closeModal('addModal');
 
+                        // Reset date
                         const nextYear = new Date();
                         nextYear.setFullYear(nextYear.getFullYear() + 1);
                         document.getElementById('itemInventoryDate').valueAsDate = nextYear;
@@ -675,6 +774,7 @@
             if (!db) return;
 
             updateSyncStatus('syncing', 'Обновление...');
+
             updates.updatedAt = new Date().toISOString();
 
             db.ref('inventory/' + id).update(updates)
@@ -707,6 +807,9 @@
             }
         }
 
+        // ==========================================
+        // NOTIFICATION
+        // ==========================================
         function showNotification(text) {
             const div = document.createElement('div');
             div.style.cssText = 'position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 12px 25px; border-radius: 25px; font-weight: 600; z-index: 10000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);';
@@ -716,7 +819,7 @@
         }
 
         // ==========================================
-        // STATISTICS & RENDERING
+        // STATISTICS
         // ==========================================
         function updateStats() {
             document.getElementById('totalItems').textContent = items.length;
@@ -731,6 +834,9 @@
             document.getElementById('overdueItems').textContent = overdue;
         }
 
+        // ==========================================
+        // RENDERING
+        // ==========================================
         function getStatusText(status) {
             const map = { 'ok': '✅ В порядке', 'repair': '🔧 В ремонте', 'decommissioned': '❌ Списано' };
             return map[status] || status;
@@ -782,33 +888,27 @@
                 const qrId = 'qr-' + item.id.replace(/[^a-zA-Z0-9]/g, '');
                 const overdue = isInventoryOverdue(item);
 
-                // Generate QR code with delay to ensure DOM is ready
                 setTimeout(() => {
-                    try {
-                        const qrContainer = document.getElementById(qrId);
-                        if (qrContainer && typeof QRCode !== 'undefined') {
-                            qrContainer.innerHTML = '';
-                            const qrData = JSON.stringify({
-                                id: item.id,
-                                name: item.name,
-                                type: 'inventory_item'
-                            });
+                    const qrContainer = document.getElementById(qrId);
+                    if (qrContainer) {
+                        qrContainer.innerHTML = '';
+                        // Generate QR with JSON data
+                        const qrData = JSON.stringify({
+                            id: item.id,
+                            name: item.name,
+                            type: 'inventory_item'
+                        });
 
-                            new QRCode(qrContainer, {
-                                text: qrData,
-                                width: 70,
-                                height: 70,
-                                colorDark: '#333',
-                                colorLight: '#fff',
-                                correctLevel: QRCode.CorrectLevel.H
-                            });
-                        } else {
-                            console.error('QR container or QRCode library not found');
-                        }
-                    } catch (e) {
-                        console.error('QR generation error:', e);
+                        new QRCode(qrContainer, {
+                            text: qrData,
+                            width: 70,
+                            height: 70,
+                            colorDark: '#333',
+                            colorLight: '#fff',
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
                     }
-                }, 100);
+                }, 0);
 
                 return `
                     <div class="item-card">
@@ -824,7 +924,8 @@
                                 <div class="item-meta-row">📅 ${formatDate(item.inventoryDate)} ${overdue ? '(просрочено!)' : ''}</div>
                             </div>
                             <div class="qr-section">
-                                <div id="${qrId}" class="qr-code"></div>
+                                <div id="qr-${item.id.replace(/[^a-zA-Z0-9]/g, '')}" class="qr-code"></div>
+
                                 <div class="qr-info">
                                     <div class="qr-id">${item.id}</div>
                                     <div class="qr-hint">Сканируйте в приложении ↗</div>
@@ -838,40 +939,11 @@
                     </div>
                 `;
             }).join('');
-
-            // Generate QR codes after DOM update
-            setTimeout(() => {
-                console.log('QR generation started');
-                filtered.forEach(item => {
-                    const qrId = 'qr-' + item.id.replace(/[^a-zA-Z0-9]/g, '');
-                    const container = document.getElementById(qrId);
-                    if (container && window.QRCode) {
-                        try {
-                            container.innerHTML = '';
-                            new QRCode(container, {
-                                text: JSON.stringify({id: item.id, name: item.name, type: 'inventory_item'}),
-                                width: 70,
-                                height: 70
-                            });
-                        } catch(e) { console.error('QR error:', e); }
-                    }
-                });
-            }, 500);
         }
 
         // ==========================================
         // ITEM DETAILS & ACTIONS
         // ==========================================
-        function openAddModal() {
-            document.getElementById('addModal').classList.add('active');
-            document.getElementById('fabMenu').classList.remove('active');
-        }
-
-        function openDataModal() {
-            document.getElementById('dataModal').classList.add('active');
-            document.getElementById('fabMenu').classList.remove('active');
-        }
-
         function quickInventory(id) {
             const item = items.find(i => i.id === id);
             if (!item || !db) return;
@@ -1101,15 +1173,11 @@
                     </div>
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
                     <script>
-                        try {
-                            new QRCode(document.getElementById('qr'), {
-                                text: '${qrData.replace(/'/g, "\'")}',
-                                width: 150,
-                                height: 150
-                            });
-                        } catch(e) {
-                            console.error('Print QR error:', e);
-                        }
+                        new QRCode(document.getElementById('qr'), {
+                            text: '${qrData.replace(/'/g, "\'")}',
+                            width: 150,
+                            height: 150
+                        });
                         setTimeout(() => window.print(), 500);
                     <\/script>
                 </body>
@@ -1234,7 +1302,7 @@
             if (!input.files || !input.files[0]) return;
 
             if (!db) {
-                alert('База данных не подключена!');
+                alert('Firebase не настроен!');
                 return;
             }
 
@@ -1243,7 +1311,7 @@
                 try {
                     const imported = JSON.parse(e.target.result);
                     if (Array.isArray(imported)) {
-                        if (confirm(`Загрузить ${imported.length} предметов? Это заменит все данные!`)) {
+                        if (confirm(`Загрузить ${imported.length} предметов? Это заменит все данные в облаке!`)) {
                             updateSyncStatus('syncing', 'Импорт...');
 
                             const updates = {};
@@ -1267,13 +1335,14 @@
                         alert('❌ Неверный формат файла');
                     }
                 } catch (err) {
-                    alert('❌ Ошибка: ' + err.message);
+                    alert('❌ Ошибка чтения файла: ' + err.message);
                 }
             };
             reader.readAsText(input.files[0]);
             input.value = '';
         }
 
+        // Close modals on outside click
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {

@@ -3,363 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Инвентарь Cloud OKO</title>
+    <title>OKO Inventory Cloud</title>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
-    <!-- Библиотеки -->
+    <!-- Libs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; }
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 15px; padding-bottom: 100px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        header { text-align: center; color: white; margin-bottom: 20px; }
+        body { background: #f4f7f6; color: #333; padding-bottom: 80px; }
+        .header { background: #667eea; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; margin-bottom: 15px; }
+        .container { max-width: 600px; margin: 0 auto; padding: 0 15px; }
 
-        /* Статистика */
-        .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: rgba(255,255,255,0.9); padding: 10px; border-radius: 12px; text-align: center; }
-        .stat-number { font-size: 1.2rem; font-weight: bold; color: #667eea; }
-        .stat-label { font-size: 0.7rem; color: #666; }
+        /* Stats */
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: white; padding: 10px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .stat-card b { display: block; font-size: 1.2rem; color: #667eea; }
+        .stat-card span { font-size: 0.7rem; color: #888; }
 
-        /* Карточки */
-        .item-card { background: white; border-radius: 15px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; }
-        .item-image { width: 100%; height: 150px; object-fit: cover; background: #eee; }
-        .item-content { padding: 15px; }
-        .status-badge { padding: 3px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: bold; float: right; }
-        .status-ok { background: #d4edda; color: #155724; }
-        .status-repair { background: #fff3cd; color: #856404; }
+        /* Search */
+        .search-bar { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 15px; outline: none; }
 
-        .qr-area { display: flex; align-items: center; gap: 10px; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
-        .qr-canvas { width: 60px; height: 60px; }
+        /* Item Card */
+        .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; position: relative; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .status-ok { background: #28a745; }
+        .status-repair { background: #ffc107; }
+        .card-id { font-size: 0.75rem; color: #aaa; margin-top: 5px; }
 
-        /* Модалки */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; }
+        .qr-preview { float: right; width: 50px; height: 50px; }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; overflow-y: auto; }
         .modal.active { display: block; }
-        .modal-content { background: white; min-height: 100vh; padding: 20px; position: relative; }
-        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 2rem; border: none; background: none; cursor: pointer; }
+        .modal-body { padding: 20px; max-width: 600px; margin: 0 auto; }
+        .btn-close { float: right; font-size: 1.5rem; border: none; background: none; }
 
-        /* Кнопки */
-        .btn { padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
-        .btn-primary { background: #667eea; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-light { background: #f0f0f0; color: #333; }
+        /* Buttons */
+        .btn { display: block; width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; margin-bottom: 10px; cursor: pointer; text-align: center; font-size: 1rem; }
+        .btn-main { background: #667eea; color: white; }
+        .btn-alt { background: #f0f2f5; color: #333; }
+        .btn-danger { background: #ffebee; color: #d32f2f; }
 
-        /* Плавающая кнопка */
-        .fab-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
-        .fab-main { width: 60px; height: 60px; border-radius: 30px; background: #28a745; color: white; border: none; font-size: 2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .fab-menu { position: absolute; bottom: 70px; right: 0; display: none; flex-direction: column; gap: 10px; }
+        /* FAB */
+        .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #667eea; color: white; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); border: none; z-index: 900; }
+        .fab-menu { position: fixed; bottom: 90px; right: 20px; display: none; flex-direction: column; gap: 10px; z-index: 900; }
         .fab-menu.active { display: flex; }
-        .fab-item { background: white; padding: 10px 20px; border-radius: 20px; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); white-space: nowrap; font-weight: bold; }
+        .fab-item { background: white; padding: 10px 20px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: none; font-weight: bold; }
 
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-        .tab { flex: 1; padding: 10px; background: #eee; border: none; border-radius: 8px; font-weight: bold; }
-        .tab.active { background: #667eea; color: white; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        #reader { width: 100%; margin: 0 auto; }
-        .history-log { font-size: 0.8rem; border-left: 2px solid #667eea; padding-left: 10px; margin-top: 10px; }
+        .item-photo { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header><h1>📦 OKO Cloud</h1></header>
+<div class="header">
+    <h1>OKO Inventory</h1>
+    <small id="status-text">Синхронизация...</small>
+</div>
 
-        <div class="stats-bar">
-            <div class="stat-card"><div class="stat-number" id="totalItems">0</div><div class="stat-label">Всего</div></div>
-            <div class="stat-card"><div class="stat-number" id="okItems">0</div><div class="stat-label">ОК</div></div>
-            <div class="stat-card"><div class="stat-number" id="repairItems">0</div><div class="stat-label">Ремонт</div></div>
-        </div>
-
-        <input type="text" id="searchInput" class="btn btn-light" placeholder="🔍 Быстрый поиск..." onkeyup="renderItems()">
-
-        <div id="itemsContainer"></div>
+<div class="container">
+    <div class="stats">
+        <div class="stat-card"><b id="count-all">0</b><span>Всего</span></div>
+        <div class="stat-card"><b id="count-ok">0</b><span>ОК</span></div>
+        <div class="stat-card"><b id="count-repair">0</b><span>Ремонт</span></div>
     </div>
 
-    <!-- Меню -->
-    <div class="fab-container">
-        <div class="fab-menu" id="fabMenu">
-            <button class="fab-item" onclick="openModal('addModal')">➕ Добавить предмет</button>
-            <button class="fab-item" onclick="openScanner()">📱 Сканировать QR</button>
-            <button class="fab-item" onclick="exportToExcel()">📊 Excel Отчет</button>
-        </div>
-        <button class="fab-main" onclick="document.getElementById('fabMenu').classList.toggle('active')">+</button>
-    </div>
+    <input type="text" id="search" class="search-bar" placeholder="Поиск по названию или ID..." onkeyup="render()">
 
-    <!-- Модалка: Добавление -->
-    <div id="addModal" class="modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
-            <h2>Новый объект</h2><br>
-            <input type="text" id="addId" class="btn btn-light" placeholder="Инвентарный номер (ID)">
-            <input type="text" id="addName" class="btn btn-light" placeholder="Название предмета">
-            <input type="text" id="addResp" class="btn btn-light" placeholder="Кто отвечает?">
-            <select id="addLoc" class="btn btn-light">
-                <option value="Офис">Офис</option>
-                <option value="Склад">Склад</option>
-                <option value="Зал">Зал</option>
-            </select>
-            <p>Фото (необязательно):</p>
-            <input type="file" id="addPhoto" class="btn btn-light" accept="image/*">
-            <button class="btn btn-primary" onclick="saveNewItem()">💾 Сохранить в Облако</button>
-        </div>
-    </div>
+    <div id="list"></div>
+</div>
 
-    <!-- Модалка: Детали -->
-    <div id="detailsModal" class="modal">
-        <div class="modal-content" id="detailsContent"></div>
-    </div>
+<button class="fab" onclick="document.getElementById('fmenu').classList.toggle('active')">+</button>
+<div class="fab-menu" id="fmenu">
+    <button class="fab-item" onclick="openM('addM')">➕ Добавить</button>
+    <button class="fab-item" onclick="startScan()">📱 Сканировать</button>
+    <button class="fab-item" onclick="exportData()">📊 Отчет Excel</button>
+</div>
 
-    <!-- Модалка: Сканер -->
-    <div id="scannerModal" class="modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="stopScanner()">&times;</button>
-            <h2>Сканирование QR</h2>
-            <div id="reader"></div>
-            <p style="text-align:center; margin-top:10px;">Наведите камеру на QR-код предмета</p>
-        </div>
+<!-- Modal: Add -->
+<div id="addM" class="modal">
+    <div class="modal-body">
+        <button class="btn-close" onclick="closeM('addM')">&times;</button>
+        <h2>Новый объект</h2><br>
+        <input type="text" id="in-id" class="search-bar" placeholder="Инвентарный № (ID)">
+        <input type="text" id="in-name" class="search-bar" placeholder="Название">
+        <input type="text" id="in-resp" class="search-bar" placeholder="Ответственный">
+        <p>Фото:</p>
+        <input type="file" id="in-photo" class="search-bar" accept="image/*">
+        <button class="btn btn-main" onclick="addItem()">Сохранить</button>
     </div>
+</div>
 
-    <script>
-        // FIREBASE CONFIG
-        const firebaseConfig = {
-            apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
-            authDomain: "inventory-oko.firebaseapp.com",
-            databaseURL: "https://inventory-oko-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "inventory-oko",
-            storageBucket: "inventory-oko.firebasestorage.app",
-            messagingSenderId: "528327448142",
-            appId: "1:528327448142:web:c0bde5327bd1464c81951f"
+<!-- Modal: Details -->
+<div id="detM" class="modal">
+    <div class="modal-body" id="det-content"></div>
+</div>
+
+<!-- Modal: Scan -->
+<div id="scanM" class="modal">
+    <div class="modal-body">
+        <button class="btn-close" onclick="stopScan()">&times;</button>
+        <h2>Сканер</h2>
+        <div id="v-reader"></div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
+        authDomain: "inventory-oko.firebaseapp.com",
+        databaseURL: "https://inventory-oko-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "inventory-oko",
+        storageBucket: "inventory-oko.firebasestorage.app",
+        messagingSenderId: "528327448142",
+        appId: "1:528327448142:web:c0bde5327bd1464c81951f"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let items = [];
+    let html5Qr = null;
+
+    // Ссылка на текущую страницу (без параметров)
+    const BASE_URL = window.location.href.split('?')[0];
+
+    // Загрузка
+    db.ref('inventory').on('value', snap => {
+        const data = snap.val();
+        items = data ? Object.values(data) : [];
+        document.getElementById('status-text').innerText = 'В сети (Cloud)';
+        render();
+        checkUrlParam(); // Проверяем, не зашли ли мы по ссылке с QR
+    });
+
+    function checkUrlParam() {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        if (id) {
+            // Убираем параметр из адреса, чтобы не мешал при перезагрузке
+            window.history.replaceState({}, document.title, BASE_URL);
+            showDetails(id);
+        }
+    }
+
+    function addItem() {
+        const id = document.getElementById('in-id').value.trim();
+        const name = document.getElementById('in-name').value.trim();
+        const resp = document.getElementById('in-resp').value.trim();
+        const file = document.getElementById('in-photo').files[0];
+
+        if (!id || !name) return alert('ID и Название обязательны!');
+
+        const save = (base64 = "") => {
+            db.ref('inventory/' + id).set({
+                id, name, resp, photo: base64, status: 'ok',
+                history: [{date: new Date().toISOString(), msg: 'Принят на учет'}]
+            });
+            closeM('addM');
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        let items = [];
-        let scanner = null;
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => save(e.target.result);
+            reader.readAsDataURL(file);
+        } else save();
+    }
 
-        // 1. ЗАГРУЗКА ДАННЫХ И ОБРАБОТКА ССЫЛКИ
-        db.ref('inventory').on('value', (snap) => {
-            const data = snap.val();
-            items = data ? Object.values(data) : [];
-            renderItems();
-            updateStats();
+    function render() {
+        const list = document.getElementById('list');
+        const query = document.getElementById('search').value.toLowerCase();
+        list.innerHTML = '';
 
-            // Проверка, есть ли в ссылке ID предмета (?id=НОМЕР)
-            const urlParams = new URLSearchParams(window.location.search);
-            const autoId = urlParams.get('id');
-            if (autoId) {
-                // Очищаем URL, чтобы при перезагрузке окно не всплывало само
-                window.history.replaceState({}, document.title, window.location.pathname);
-                showDetails(autoId);
-            }
-        });
-
-        // 2. СОХРАНЕНИЕ
-        function saveNewItem() {
-            const id = document.getElementById('addId').value.trim();
-            const name = document.getElementById('addName').value.trim();
-            const resp = document.getElementById('addResp').value;
-            const loc = document.getElementById('addLoc').value;
-            const photoFile = document.getElementById('addPhoto').files[0];
-
-            if (!id || !name) return alert("Заполните ID и Название!");
-
-            const doSave = (photoBase64 = "") => {
-                db.ref('inventory/' + id).set({
-                    id, name, resp, loc, photo: photoBase64,
-                    status: 'ok',
-                    history: [{ date: new Date().toISOString(), msg: "Предмет поставлен на учет" }]
-                });
-                closeModal('addModal');
-                document.getElementById('addId').value = '';
-                document.getElementById('addName').value = '';
-            };
-
-            if (photoFile) {
-                const reader = new FileReader();
-                reader.onload = (e) => doSave(e.target.result);
-                reader.readAsDataURL(photoFile);
-            } else {
-                doSave();
-            }
-        }
-
-        // 3. ОТРИСОВКА СПИСКА
-        function renderItems() {
-            const container = document.getElementById('itemsContainer');
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            container.innerHTML = '';
-
-            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search))
-            .forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.onclick = () => showDetails(item.id);
-                
-                // Генерируем ссылку для QR (базовый URL + ?id=...)
-                const qrUrl = window.location.origin + window.location.pathname + "?id=" + item.id;
-
-                card.innerHTML = `
-                    ${item.photo ? `<img src="${item.photo}" class="item-image">` : ''}
-                    <div class="item-content">
-                        <span class="status-badge status-${item.status}">${item.status.toUpperCase()}</span>
-                        <strong>${item.name}</strong>
-                        <p style="font-size:0.8rem; color:#666; margin-top:5px;">ID: ${item.id} | 📍 ${item.loc}</p>
-                        <div class="qr-area">
-                            <div id="qr-${item.id}" class="qr-canvas"></div>
-                            <span style="font-size:0.7rem; color:#888;">QR для быстрой проверки</span>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-                
-                // Создаем QR код, который ведет на этот предмет
-                new QRCode(document.getElementById(`qr-${item.id}`), {
-                    text: qrUrl,
-                    width: 60,
-                    height: 60,
-                    correctLevel: QRCode.CorrectLevel.L
-                });
-            });
-        }
-
-        // 4. ДЕТАЛИ ПРЕДМЕТА
-        function showDetails(id) {
-            const item = items.find(i => i.id === id);
-            if (!item) return alert("Предмет не найден!");
-
-            const content = document.getElementById('detailsContent');
-            content.innerHTML = `
-                <button class="close-modal" onclick="closeModal('detailsModal')">&times;</button>
-                <h2>${item.name}</h2>
-                <p style="color:#666">Инвентарный №: ${item.id}</p>
-                <hr style="margin:15px 0; opacity:0.2;">
-                
-                <div class="tabs">
-                    <button class="tab active" onclick="switchTab(event, 'act')">Действия</button>
-                    <button class="tab" onclick="switchTab(event, 'his')">История</button>
-                </div>
-
-                <div id="tab-act" class="tab-content active">
-                    <p><b>Локация:</b> ${item.loc}</p>
-                    <p><b>Ответственный:</b> ${item.resp || 'Не указан'}</p><br>
-                    <button class="btn btn-success" onclick="updateItemStatus('${item.id}', 'ok')">✅ Все в порядке</button>
-                    <button class="btn btn-primary" onclick="updateItemStatus('${item.id}', 'repair')">🔧 Требуется ремонт</button>
-                    <button class="btn btn-light" onclick="printSingleQR('${item.id}')">🖨️ Распечатать QR</button>
-                    <button class="btn btn-danger" onclick="deleteItem('${item.id}')">🗑️ Удалить запись</button>
-                </div>
-
-                <div id="tab-his" class="tab-content">
-                    <div class="history-log">
-                        ${item.history ? item.history.map(h => `<div><b>${new Date(h.date).toLocaleDateString()}</b>: ${h.msg}</div>`).join('') : 'Истории нет'}
-                    </div>
+        const filtered = items.filter(i => i.name.toLowerCase().includes(query) || i.id.toLowerCase().includes(query));
+        
+        filtered.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.onclick = () => showDetails(item.id);
+            el.innerHTML = `
+                <div id="qrp-${item.id}" class="qr-preview"></div>
+                <div>
+                    <span class="status-dot status-${item.status}"></span>
+                    <b>${item.name}</b>
+                    <div class="card-id">ID: ${item.id} | ${item.resp || 'Без отв.'}</div>
                 </div>
             `;
-            openModal('detailsModal');
-        }
+            list.appendChild(el);
 
-        // 5. ФУНКЦИИ УПРАВЛЕНИЯ
-        function updateItemStatus(id, newStatus) {
-            const item = items.find(i => i.id === id);
-            const history = item.history || [];
-            history.unshift({ date: new Date().toISOString(), msg: `Статус изменен на: ${newStatus}` });
-            db.ref('inventory/' + id).update({ status: newStatus, history });
-            closeModal('detailsModal');
-        }
+            // Генерируем QR-ссылку
+            new QRCode(document.getElementById('qrp-'+item.id), {
+                text: BASE_URL + "?id=" + item.id,
+                width: 50, height: 50
+            });
+        });
 
-        function deleteItem(id) {
-            if (confirm("Удалить предмет из базы?")) {
-                db.ref('inventory/' + id).remove();
-                closeModal('detailsModal');
+        document.getElementById('count-all').innerText = items.length;
+        document.getElementById('count-ok').innerText = items.filter(i => i.status === 'ok').length;
+        document.getElementById('count-repair').innerText = items.filter(i => i.status === 'repair').length;
+    }
+
+    function showDetails(id) {
+        const item = items.find(i => i.id === id);
+        if (!item) return;
+
+        const cont = document.getElementById('det-content');
+        cont.innerHTML = `
+            <button class="btn-close" onclick="closeM('detM')">&times;</button>
+            <h2>${item.name}</h2>
+            <p class="card-id">Инвентарный номер: ${item.id}</p><br>
+            ${item.photo ? `<img src="${item.photo}" class="item-photo">` : ''}
+            
+            <button class="btn btn-alt" onclick="updateStatus('${item.id}', 'ok')">✅ Все в порядке</button>
+            <button class="btn btn-alt" onclick="updateStatus('${item.id}', 'repair')">🔧 В ремонт</button>
+            <button class="btn btn-main" onclick="printQR('${item.id}')">🖨️ Печать QR-кода</button>
+            <button class="btn btn-danger" onclick="deleteItem('${item.id}')">🗑️ Удалить</button>
+            <br>
+            <h4>История:</h4>
+            <div style="font-size:0.8rem; color:#666; margin-top:10px;">
+                ${item.history.map(h => `<div>• ${new Date(h.date).toLocaleDateString()}: ${h.msg}</div>`).join('')}
+            </div>
+        `;
+        openM('detM');
+    }
+
+    function updateStatus(id, stat) {
+        const item = items.find(i => i.id === id);
+        const history = item.history || [];
+        history.unshift({date: new Date().toISOString(), msg: 'Статус изменен на ' + stat});
+        db.ref('inventory/' + id).update({status: stat, history});
+        closeM('detM');
+    }
+
+    function deleteItem(id) {
+        if (confirm('Удалить?')) {
+            db.ref('inventory/' + id).remove();
+            closeM('detM');
+        }
+    }
+
+    function startScan() {
+        document.getElementById('fmenu').classList.remove('active');
+        openM('scanM');
+        html5Qr = new Html5Qrcode("v-reader");
+        html5Qr.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+            // Парсим ID из ссылки или берем текст как есть
+            let foundId = text;
+            if (text.includes('?id=')) {
+                foundId = text.split('?id=')[1];
             }
-        }
+            stopScan();
+            showDetails(foundId);
+        });
+    }
 
-        function switchTab(e, tabId) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-' + tabId).classList.add('active');
-            e.target.classList.add('active');
-        }
+    function stopScan() {
+        if (html5Qr) html5Qr.stop().then(() => closeM('scanM'));
+        else closeM('scanM');
+    }
 
-        // 6. СКАНИРОВАНИЕ
-        function openScanner() {
-            document.getElementById('fabMenu').classList.remove('active');
-            openModal('scannerModal');
-            scanner = new Html5Qrcode("reader");
-            scanner.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: 250 },
-                (text) => {
-                    // Если в QR зашита полная ссылка, вытаскиваем только ID
-                    try {
-                        const url = new URL(text);
-                        const idFromUrl = url.searchParams.get('id');
-                        if (idFromUrl) {
-                            stopScanner();
-                            showDetails(idFromUrl);
-                        } else {
-                            // Если QR старый (просто текст), ищем как ID
-                            stopScanner();
-                            showDetails(text);
-                        }
-                    } catch(e) {
-                        // Если это не ссылка, а просто текст
-                        stopScanner();
-                        showDetails(text);
-                    }
-                }
-            );
-        }
+    function printQR(id) {
+        const qrUrl = BASE_URL + "?id=" + id;
+        const win = window.open('', '_blank');
+        win.document.write(`
+            <div style="text-align:center; padding:50px; font-family:sans-serif;">
+                <div id="q"></div>
+                <h2 style="margin-top:20px;">${id}</h2>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+                <script>
+                    new QRCode(document.getElementById('q'), { text: "${qrUrl}", width: 250, height: 250 });
+                    setTimeout(() => window.print(), 600);
+                <\/script>
+            </div>
+        `);
+        win.document.close();
+    }
 
-        function stopScanner() {
-            if (scanner) {
-                scanner.stop().then(() => closeModal('scannerModal'));
-            } else {
-                closeModal('scannerModal');
-            }
-        }
+    function exportData() {
+        const ws = XLSX.utils.json_to_sheet(items.map(i => ({ID: i.id, Название: i.name, Статус: i.status})));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+        XLSX.writeFile(wb, "Inventory_OKO.xlsx");
+    }
 
-        // 7. ВСПОМОГАТЕЛЬНЫЕ
-        function updateStats() {
-            document.getElementById('totalItems').textContent = items.length;
-            document.getElementById('okItems').textContent = items.filter(i => i.status === 'ok').length;
-            document.getElementById('repairItems').textContent = items.filter(i => i.status === 'repair').length;
-        }
-
-        function openModal(id) { document.getElementById(id).classList.add('active'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-        function printSingleQR(id) {
-            const qrUrl = window.location.origin + window.location.pathname + "?id=" + id;
-            const printWin = window.open('', '_blank');
-            printWin.document.write(`
-                <div style="text-align:center; font-family:sans-serif;">
-                    <h2>${id}</h2>
-                    <div id="qrcode"></div>
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-                    <script>
-                        new QRCode(document.getElementById("qrcode"), { text: "${qrUrl}", width: 250, height: 250 });
-                        setTimeout(() => window.print(), 500);
-                    <\/script>
-                </div>
-            `);
-            printWin.document.close();
-        }
-
-        function exportToExcel() {
-            const tableData = items.map(i => ({ ID: i.id, Название: i.name, Статус: i.status, Локация: i.loc, Ответственный: i.resp }));
-            const ws = XLSX.utils.json_to_sheet(tableData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-            XLSX.writeFile(wb, "OKO_Inventory_Report.xlsx");
-        }
-    </script>
+    function openM(id) { document.getElementById(id).classList.add('active'); }
+    function closeM(id) { document.getElementById(id).classList.remove('active'); }
+</script>
 </body>
 </html>

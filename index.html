@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OKO Inventory Cloud</title>
+    <title>Инвентаризация Cloud OKO</title>
 
-    <!-- Firebase -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
@@ -15,283 +15,387 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; }
-        body { background: #f4f7f6; color: #333; padding-bottom: 80px; }
-        .header { background: #667eea; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; margin-bottom: 15px; }
-        .container { max-width: 600px; margin: 0 auto; padding: 0 15px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; color: #333; padding-bottom: 100px;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 15px; }
+        header { text-align: center; color: white; margin-bottom: 20px; padding-top: 10px; }
+        header h1 { font-size: 1.8rem; }
+
+        /* Sync Status */
+        .sync-status {
+            position: fixed; top: 10px; right: 10px; padding: 8px 15px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: 600; z-index: 1000; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .sync-online { background: #d4edda; color: #155724; }
+        .sync-offline { background: #f8d7da; color: #721c24; }
 
         /* Stats */
-        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .stat-card { background: white; padding: 10px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .stat-card b { display: block; font-size: 1.2rem; color: #667eea; }
-        .stat-card span { font-size: 0.7rem; color: #888; }
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: rgba(255,255,255,0.95); padding: 10px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .stat-number { font-size: 1.3rem; font-weight: bold; color: #667eea; }
+        .stat-label { font-size: 0.65rem; color: #666; margin-top: 3px; }
 
-        /* Search */
-        .search-bar { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 15px; outline: none; }
+        /* Items */
+        .search-box { width: 100%; padding: 15px; border-radius: 25px; border: none; margin-bottom: 20px; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); outline: none; }
+        .item-card { background: white; border-radius: 16px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; }
+        .item-image { width: 100%; height: 160px; object-fit: cover; background: #eee; }
+        .item-content { padding: 15px; }
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; float: right; text-transform: uppercase; }
+        .status-ok { background: #d4edda; color: #155724; }
+        .status-repair { background: #fff3cd; color: #856404; }
 
-        /* Item Card */
-        .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; position: relative; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .status-ok { background: #28a745; }
-        .status-repair { background: #ffc107; }
-        .card-id { font-size: 0.75rem; color: #aaa; margin-top: 5px; }
-
-        .qr-preview { float: right; width: 50px; height: 50px; }
-
-        /* Modals */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; overflow-y: auto; }
-        .modal.active { display: block; }
-        .modal-body { padding: 20px; max-width: 600px; margin: 0 auto; }
-        .btn-close { float: right; font-size: 1.5rem; border: none; background: none; }
-
-        /* Buttons */
-        .btn { display: block; width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; margin-bottom: 10px; cursor: pointer; text-align: center; font-size: 1rem; }
-        .btn-main { background: #667eea; color: white; }
-        .btn-alt { background: #f0f2f5; color: #333; }
-        .btn-danger { background: #ffebee; color: #d32f2f; }
+        /* QR */
+        .qr-section { display: flex; align-items: center; gap: 15px; padding-top: 15px; border-top: 1px solid #eee; margin-top: 10px; }
+        .qr-box { width: 70px; height: 70px; }
 
         /* FAB */
-        .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #667eea; color: white; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); border: none; z-index: 900; }
-        .fab-menu { position: fixed; bottom: 90px; right: 20px; display: none; flex-direction: column; gap: 10px; z-index: 900; }
+        .fab-container { position: fixed; bottom: 20px; right: 20px; z-index: 100; }
+        .fab { width: 60px; height: 60px; border-radius: 50%; background: #28a745; color: white; border: none; font-size: 2rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
+        .fab-menu { position: absolute; bottom: 70px; right: 0; display: none; flex-direction: column; gap: 10px; }
         .fab-menu.active { display: flex; }
-        .fab-item { background: white; padding: 10px 20px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: none; font-weight: bold; }
+        .fab-item { background: white; padding: 12px 20px; border-radius: 25px; font-size: 0.9rem; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2); white-space: nowrap; border: none; font-weight: 600; }
 
-        .item-photo { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; }
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; }
+        .modal.active { display: block; }
+        .modal-content { background: white; min-height: 100vh; padding: 20px; position: relative; }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 2rem; border: none; background: none; cursor: pointer; color: #666; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.85rem; color: #666; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 10px; font-size: 1rem; outline: none; }
+        
+        .btn { padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 10px; background: #f0f0f0; border: none; border-radius: 10px; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
+        .tab.active { background: #667eea; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .history-item { border-left: 2px solid #667eea; padding-left: 10px; margin-bottom: 15px; font-size: 0.85rem; }
+        .history-date { font-size: 0.7rem; color: #999; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>OKO Inventory</h1>
-    <small id="status-text">Синхронизация...</small>
-</div>
-
-<div class="container">
-    <div class="stats">
-        <div class="stat-card"><b id="count-all">0</b><span>Всего</span></div>
-        <div class="stat-card"><b id="count-ok">0</b><span>ОК</span></div>
-        <div class="stat-card"><b id="count-repair">0</b><span>Ремонт</span></div>
+    <div id="syncStatus" class="sync-status sync-offline">
+        <span id="syncIcon">⚪</span> <span id="syncText">Загрузка...</span>
     </div>
 
-    <input type="text" id="search" class="search-bar" placeholder="Поиск по названию или ID..." onkeyup="render()">
+    <div class="container">
+        <header>
+            <h1>📦 Инвентарь Cloud</h1>
+        </header>
 
-    <div id="list"></div>
-</div>
+        <div class="stats-bar">
+            <div class="stat-card"><div class="stat-number" id="totalItems">0</div><div class="stat-label">Всего</div></div>
+            <div class="stat-card"><div class="stat-number" id="okItems">0</div><div class="stat-label">ОК</div></div>
+            <div class="stat-card"><div class="stat-number" id="repairItems">0</div><div class="stat-label">Ремонт</div></div>
+            <div class="stat-card"><div class="stat-number" id="overdueItems">0</div><div class="stat-label">Внимание</div></div>
+        </div>
 
-<button class="fab" onclick="document.getElementById('fmenu').classList.toggle('active')">+</button>
-<div class="fab-menu" id="fmenu">
-    <button class="fab-item" onclick="openM('addM')">➕ Добавить</button>
-    <button class="fab-item" onclick="startScan()">📱 Сканировать</button>
-    <button class="fab-item" onclick="exportData()">📊 Отчет Excel</button>
-</div>
+        <input type="text" class="search-box" id="searchInput" placeholder="🔍 Поиск по названию или ID..." onkeyup="renderItems()">
 
-<!-- Modal: Add -->
-<div id="addM" class="modal">
-    <div class="modal-body">
-        <button class="btn-close" onclick="closeM('addM')">&times;</button>
-        <h2>Новый объект</h2><br>
-        <input type="text" id="in-id" class="search-bar" placeholder="Инвентарный № (ID)">
-        <input type="text" id="in-name" class="search-bar" placeholder="Название">
-        <input type="text" id="in-resp" class="search-bar" placeholder="Ответственный">
-        <p>Фото:</p>
-        <input type="file" id="in-photo" class="search-bar" accept="image/*">
-        <button class="btn btn-main" onclick="addItem()">Сохранить</button>
+        <div id="itemsContainer"></div>
     </div>
-</div>
 
-<!-- Modal: Details -->
-<div id="detM" class="modal">
-    <div class="modal-body" id="det-content"></div>
-</div>
-
-<!-- Modal: Scan -->
-<div id="scanM" class="modal">
-    <div class="modal-body">
-        <button class="btn-close" onclick="stopScan()">&times;</button>
-        <h2>Сканер</h2>
-        <div id="v-reader"></div>
+    <div class="fab-container">
+        <div class="fab-menu" id="fabMenu">
+            <button class="fab-item" onclick="openAddModal()">➕ Добавить предмет</button>
+            <button class="fab-item" onclick="openScanner()">📱 Сканировать QR</button>
+            <button class="fab-item" onclick="exportToExcel()">📊 Отчет Excel</button>
+        </div>
+        <button class="fab" onclick="document.getElementById('fabMenu').classList.toggle('active')">+</button>
     </div>
-</div>
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
-        authDomain: "inventory-oko.firebaseapp.com",
-        databaseURL: "https://inventory-oko-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "inventory-oko",
-        storageBucket: "inventory-oko.firebasestorage.app",
-        messagingSenderId: "528327448142",
-        appId: "1:528327448142:web:c0bde5327bd1464c81951f"
-    };
+    <!-- Modal: Add -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
+            <h2>➕ Новый объект</h2><br>
+            <div class="form-group">
+                <label>Инвентарный номер (Создан автоматически)</label>
+                <input type="text" id="addId" readonly style="background:#f9f9f9; color:#666;">
+            </div>
+            <div class="form-group">
+                <label>Название предмета</label>
+                <input type="text" id="addName" placeholder="Напр: Монитор Samsung">
+            </div>
+            <div class="form-group">
+                <label>Ответственный</label>
+                <input type="text" id="addResp" placeholder="ФИО">
+            </div>
+            <div class="form-group">
+                <label>Локация</label>
+                <select id="addLoc">
+                    <option value="Офис">Офис</option>
+                    <option value="Склад">Склад</option>
+                    <option value="Зал">Зал</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Фотография</label>
+                <input type="file" id="addPhoto" accept="image/*">
+            </div>
+            <button class="btn btn-primary" onclick="saveNewItem()">💾 Поставить на учет</button>
+        </div>
+    </div>
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    let items = [];
-    let html5Qr = null;
+    <!-- Modal: Details -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content" id="itemModalContent"></div>
+    </div>
 
-    // Ссылка на текущую страницу (без параметров)
-    const BASE_URL = window.location.href.split('?')[0];
+    <!-- Modal: Scanner -->
+    <div id="scannerModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeScanner()">&times;</button>
+            <h2>📱 Сканирование</h2><br>
+            <div id="reader"></div>
+        </div>
+    </div>
 
-    // Загрузка
-    db.ref('inventory').on('value', snap => {
-        const data = snap.val();
-        items = data ? Object.values(data) : [];
-        document.getElementById('status-text').innerText = 'В сети (Cloud)';
-        render();
-        checkUrlParam(); // Проверяем, не зашли ли мы по ссылке с QR
-    });
-
-    function checkUrlParam() {
-        const params = new URLSearchParams(window.location.search);
-        const id = params.get('id');
-        if (id) {
-            // Убираем параметр из адреса, чтобы не мешал при перезагрузке
-            window.history.replaceState({}, document.title, BASE_URL);
-            showDetails(id);
-        }
-    }
-
-    function addItem() {
-        const id = document.getElementById('in-id').value.trim();
-        const name = document.getElementById('in-name').value.trim();
-        const resp = document.getElementById('in-resp').value.trim();
-        const file = document.getElementById('in-photo').files[0];
-
-        if (!id || !name) return alert('ID и Название обязательны!');
-
-        const save = (base64 = "") => {
-            db.ref('inventory/' + id).set({
-                id, name, resp, photo: base64, status: 'ok',
-                history: [{date: new Date().toISOString(), msg: 'Принят на учет'}]
-            });
-            closeM('addM');
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
+            authDomain: "inventory-oko.firebaseapp.com",
+            databaseURL: "https://inventory-oko-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "inventory-oko",
+            storageBucket: "inventory-oko.firebasestorage.app",
+            messagingSenderId: "528327448142",
+            appId: "1:528327448142:web:c0bde5327bd1464c81951f"
         };
 
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = e => save(e.target.result);
-            reader.readAsDataURL(file);
-        } else save();
-    }
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let items = [];
+        let html5QrCode = null;
 
-    function render() {
-        const list = document.getElementById('list');
-        const query = document.getElementById('search').value.toLowerCase();
-        list.innerHTML = '';
+        // Текущий адрес сайта для QR ссылок
+        const BASE_URL = window.location.origin + window.location.pathname;
 
-        const filtered = items.filter(i => i.name.toLowerCase().includes(query) || i.id.toLowerCase().includes(query));
-        
-        filtered.forEach(item => {
-            const el = document.createElement('div');
-            el.className = 'card';
-            el.onclick = () => showDetails(item.id);
-            el.innerHTML = `
-                <div id="qrp-${item.id}" class="qr-preview"></div>
-                <div>
-                    <span class="status-dot status-${item.status}"></span>
-                    <b>${item.name}</b>
-                    <div class="card-id">ID: ${item.id} | ${item.resp || 'Без отв.'}</div>
+        db.ref('inventory').on('value', (snapshot) => {
+            const data = snapshot.val();
+            items = data ? Object.values(data) : [];
+            renderItems();
+            updateStats();
+            document.getElementById('syncStatus').className = 'sync-status sync-online';
+            document.getElementById('syncText').textContent = 'В сети';
+            document.getElementById('syncIcon').textContent = '🟢';
+
+            // Проверка перехода по QR ссылке
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoId = urlParams.get('id');
+            if (autoId) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+                showItemDetails(autoId);
+            }
+        });
+
+        function generateId() {
+            return 'OKO-' + Math.floor(1000 + Math.random() * 9000);
+        }
+
+        function openAddModal() {
+            document.getElementById('addId').value = generateId();
+            document.getElementById('fabMenu').classList.remove('active');
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        function saveNewItem() {
+            const id = document.getElementById('addId').value;
+            const name = document.getElementById('addName').value.trim();
+            const resp = document.getElementById('addResp').value;
+            const loc = document.getElementById('addLoc').value;
+            const photoFile = document.getElementById('addPhoto').files[0];
+
+            if (!name) return alert("Введите название!");
+
+            const upload = (imgBase64 = "") => {
+                db.ref('inventory/' + id).set({
+                    id, name, resp, loc, photo: imgBase64,
+                    status: 'ok',
+                    history: [{date: new Date().toISOString(), msg: "Создан предмет и поставлен на учет"}]
+                });
+                closeModal('addModal');
+                document.getElementById('addName').value = '';
+            };
+
+            if (photoFile) {
+                const reader = new FileReader();
+                reader.onload = (e) => upload(e.target.result);
+                reader.readAsDataURL(photoFile);
+            } else upload();
+        }
+
+        function renderItems() {
+            const container = document.getElementById('itemsContainer');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            container.innerHTML = '';
+
+            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search))
+            .forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.onclick = () => showItemDetails(item.id);
+                
+                // Ссылка в QR: текущий адрес + ID
+                const qrUrl = BASE_URL + "?id=" + item.id;
+
+                div.innerHTML = `
+                    ${item.photo ? `<img src="${item.photo}" class="item-image">` : '<div style="height:160px;background:#eee;display:flex;align-items:center;justify-content:center;color:#999">Нет фото</div>'}
+                    <div class="item-content">
+                        <span class="status-badge status-${item.status}">${item.status === 'ok' ? 'ОК' : 'Ремонт'}</span>
+                        <div style="font-weight:bold;font-size:1.1rem;">${item.name}</div>
+                        <p style="font-size:0.8rem;color:#666;margin-top:5px;">ID: ${item.id} | 📍 ${item.loc}</p>
+                        <div class="qr-section">
+                            <div id="qr-${item.id}" class="qr-box"></div>
+                            <span style="font-size:0.7rem;color:#888;">Камера телефона сразу откроет этот предмет</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+                new QRCode(document.getElementById(`qr-${item.id}`), { text: qrUrl, width: 70, height: 70 });
+            });
+        }
+
+        function showItemDetails(id) {
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            const content = document.getElementById('itemModalContent');
+            content.innerHTML = `
+                <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
+                <h2>${item.name}</h2>
+                <p style="color:#888;margin-bottom:15px;">Инвентарный номер: ${item.id}</p>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab(event, 'act')">Действия</button>
+                    <button class="tab" onclick="switchTab(event, 'his')">История</button>
+                    <button class="tab" onclick="switchTab(event, 'mov')">Перемещение</button>
+                </div>
+
+                <div id="tab-act" class="tab-content active">
+                    <button class="btn btn-primary" onclick="updateStatus('${item.id}', 'ok')">✅ В порядке</button>
+                    <button class="btn btn-secondary" onclick="updateStatus('${item.id}', 'repair')">🔧 В ремонт</button>
+                    <button class="btn btn-secondary" onclick="printItemQR('${item.id}')">🖨️ Распечатать QR-код</button>
+                    <button class="btn btn-danger" onclick="deleteItem('${item.id}')">🗑️ Удалить запись</button>
+                </div>
+
+                <div id="tab-his" class="tab-content">
+                    ${item.history ? item.history.map(h => `
+                        <div class="history-item">
+                            <div class="history-date">${new Date(h.date).toLocaleString()}</div>
+                            <div>${h.msg}</div>
+                        </div>
+                    `).join('') : 'Нет истории'}
+                </div>
+
+                <div id="tab-mov" class="tab-content">
+                    <label style="font-size:0.8rem;">Новая локация:</label>
+                    <select id="newLoc" class="btn btn-secondary" style="margin-top:5px;">
+                        <option value="Офис">Офис</option>
+                        <option value="Склад">Склад</option>
+                        <option value="Зал">Зал</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="moveItem('${item.id}')">🚚 Подтвердить перемещение</button>
                 </div>
             `;
-            list.appendChild(el);
-
-            // Генерируем QR-ссылку
-            new QRCode(document.getElementById('qrp-'+item.id), {
-                text: BASE_URL + "?id=" + item.id,
-                width: 50, height: 50
-            });
-        });
-
-        document.getElementById('count-all').innerText = items.length;
-        document.getElementById('count-ok').innerText = items.filter(i => i.status === 'ok').length;
-        document.getElementById('count-repair').innerText = items.filter(i => i.status === 'repair').length;
-    }
-
-    function showDetails(id) {
-        const item = items.find(i => i.id === id);
-        if (!item) return;
-
-        const cont = document.getElementById('det-content');
-        cont.innerHTML = `
-            <button class="btn-close" onclick="closeM('detM')">&times;</button>
-            <h2>${item.name}</h2>
-            <p class="card-id">Инвентарный номер: ${item.id}</p><br>
-            ${item.photo ? `<img src="${item.photo}" class="item-photo">` : ''}
-            
-            <button class="btn btn-alt" onclick="updateStatus('${item.id}', 'ok')">✅ Все в порядке</button>
-            <button class="btn btn-alt" onclick="updateStatus('${item.id}', 'repair')">🔧 В ремонт</button>
-            <button class="btn btn-main" onclick="printQR('${item.id}')">🖨️ Печать QR-кода</button>
-            <button class="btn btn-danger" onclick="deleteItem('${item.id}')">🗑️ Удалить</button>
-            <br>
-            <h4>История:</h4>
-            <div style="font-size:0.8rem; color:#666; margin-top:10px;">
-                ${item.history.map(h => `<div>• ${new Date(h.date).toLocaleDateString()}: ${h.msg}</div>`).join('')}
-            </div>
-        `;
-        openM('detM');
-    }
-
-    function updateStatus(id, stat) {
-        const item = items.find(i => i.id === id);
-        const history = item.history || [];
-        history.unshift({date: new Date().toISOString(), msg: 'Статус изменен на ' + stat});
-        db.ref('inventory/' + id).update({status: stat, history});
-        closeM('detM');
-    }
-
-    function deleteItem(id) {
-        if (confirm('Удалить?')) {
-            db.ref('inventory/' + id).remove();
-            closeM('detM');
+            document.getElementById('itemModal').classList.add('active');
         }
-    }
 
-    function startScan() {
-        document.getElementById('fmenu').classList.remove('active');
-        openM('scanM');
-        html5Qr = new Html5Qrcode("v-reader");
-        html5Qr.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-            // Парсим ID из ссылки или берем текст как есть
-            let foundId = text;
-            if (text.includes('?id=')) {
-                foundId = text.split('?id=')[1];
+        function switchTab(e, tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            e.target.classList.add('active');
+        }
+
+        function updateStatus(id, s) {
+            const history = items.find(i => i.id === id).history || [];
+            history.unshift({date: new Date().toISOString(), msg: `Статус изменен на ${s}`});
+            db.ref('inventory/' + id).update({status: s, history});
+            closeModal('itemModal');
+        }
+
+        function moveItem(id) {
+            const loc = document.getElementById('newLoc').value;
+            const history = items.find(i => i.id === id).history || [];
+            history.unshift({date: new Date().toISOString(), msg: `Перемещен в ${loc}`});
+            db.ref('inventory/' + id).update({loc, history});
+            closeModal('itemModal');
+        }
+
+        function deleteItem(id) {
+            if (confirm("Удалить предмет?")) {
+                db.ref('inventory/' + id).remove();
+                closeModal('itemModal');
             }
-            stopScan();
-            showDetails(foundId);
-        });
-    }
+        }
 
-    function stopScan() {
-        if (html5Qr) html5Qr.stop().then(() => closeM('scanM'));
-        else closeM('scanM');
-    }
+        function openScanner() {
+            document.getElementById('fabMenu').classList.remove('active');
+            document.getElementById('scannerModal').classList.add('active');
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+                let id = text;
+                if (text.includes('?id=')) id = text.split('?id=')[1];
+                stopScanner();
+                showItemDetails(id);
+            });
+        }
 
-    function printQR(id) {
-        const qrUrl = BASE_URL + "?id=" + id;
-        const win = window.open('', '_blank');
-        win.document.write(`
-            <div style="text-align:center; padding:50px; font-family:sans-serif;">
-                <div id="q"></div>
-                <h2 style="margin-top:20px;">${id}</h2>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-                <script>
-                    new QRCode(document.getElementById('q'), { text: "${qrUrl}", width: 250, height: 250 });
-                    setTimeout(() => window.print(), 600);
-                <\/script>
-            </div>
-        `);
-        win.document.close();
-    }
+        function stopScanner() {
+            if (html5QrCode) html5QrCode.stop().then(() => closeModal('scannerModal'));
+            else closeModal('scannerModal');
+        }
 
-    function exportData() {
-        const ws = XLSX.utils.json_to_sheet(items.map(i => ({ID: i.id, Название: i.name, Статус: i.status})));
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-        XLSX.writeFile(wb, "Inventory_OKO.xlsx");
-    }
+        function closeScanner() { stopScanner(); }
 
-    function openM(id) { document.getElementById(id).classList.add('active'); }
-    function closeM(id) { document.getElementById(id).classList.remove('active'); }
-</script>
+        function printItemQR(id) {
+            const qrUrl = BASE_URL + "?id=" + id;
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html>
+                <head><title>Печать QR ${id}</title></head>
+                <body style="text-align:center;font-family:sans-serif;padding:50px;">
+                    <h2>${id}</h2>
+                    <div id="q"></div>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+                    <script>
+                        new QRCode(document.getElementById('q'), { text: "${qrUrl}", width: 250, height: 250 });
+                        setTimeout(() => { window.print(); window.close(); }, 700);
+                    <\/script>
+                </body>
+                </html>
+            `);
+            win.document.close();
+        }
+
+        function updateStats() {
+            document.getElementById('totalItems').textContent = items.length;
+            document.getElementById('okItems').textContent = items.filter(i => i.status === 'ok').length;
+            document.getElementById('repairItems').textContent = items.filter(i => i.status === 'repair').length;
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        function exportToExcel() {
+            const data = items.map(i => ({ID: i.id, Название: i.name, Локация: i.loc, Статус: i.status}));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+            XLSX.writeFile(wb, "Inventory_OKO.xlsx");
+        }
+    </script>
 </body>
 </html>

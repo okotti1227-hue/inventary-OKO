@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Инвентарь ОКО</title>
 
-    <!-- Firebase SDK (Добавили модуль Storage) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
-    <!-- Библиотеки -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -23,96 +21,63 @@
             --oko-white: #F4EEDC;
         }
 
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            font-family: "Times New Roman", Times, serif; 
-            -webkit-tap-highlight-color: transparent;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Times New Roman", Times, serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--oko-white); color: var(--oko-brown); min-height: 100vh; }
 
-        /* ВХОД */
-        #login-screen {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; padding: 20px;
-        }
-        .login-card {
-            background: white; padding: 30px; border-radius: 4px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center;
-            border: 2px solid var(--oko-beige);
-        }
+        /* LOGIN */
+        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
+        .login-card { background: white; padding: 30px; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; border: 2px solid var(--oko-beige); }
 
-        /* ПРИЛОЖЕНИЕ */
+        /* APP */
         #main-app { display: none; padding-bottom: 80px; }
         .container { max-width: 700px; margin: 0 auto; padding: 10px; }
-
-        header { 
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 0; border-bottom: 1px solid var(--oko-beige); margin-bottom: 15px; 
-        }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--oko-beige); margin-bottom: 15px; }
         header h1 { font-size: 1.4rem; font-weight: bold; color: var(--oko-green); text-transform: uppercase; }
-        .logout-btn { padding: 5px 10px; font-size: 0.8rem; background: var(--oko-brown); color: white; border: none; cursor: pointer; border-radius: 2px; }
+        .logout-btn { padding: 5px 10px; font-size: 0.8rem; background: var(--oko-brown); color: white; border: none; cursor: pointer; }
 
+        /* STATS */
         .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
         .stat-card { background: var(--oko-beige); padding: 10px 2px; border-radius: 4px; text-align: center; }
         .stat-number { font-size: 1.1rem; font-weight: bold; color: var(--oko-green); }
-        .stat-label { font-size: 0.65rem; text-transform: uppercase; }
 
-        .search-box { 
-            width: 100%; padding: 12px; border: 1px solid var(--oko-beige); 
-            margin-bottom: 15px; outline: none; font-size: 1rem; background: white;
-        }
+        .search-box { width: 100%; padding: 12px; border: 1px solid var(--oko-beige); margin-bottom: 15px; outline: none; font-size: 1rem; background: white; }
 
-        /* КАРТОЧКИ */
-        .item-card { 
-            background: white; border-radius: 4px; overflow: hidden; margin-bottom: 12px; 
-            border: 1px solid var(--oko-beige); cursor: pointer;
-        }
-        .item-image { width: 100%; height: 200px; object-fit: cover; background: #eee; }
+        /* ITEM CARDS */
+        .item-card { background: white; border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--oko-beige); cursor: pointer; }
+        .item-image { width: 100%; height: 180px; object-fit: cover; background: #eee; }
         .item-content { padding: 12px; }
 
-        .status-badge { padding: 2px 8px; border-radius: 2px; font-size: 0.7rem; font-weight: bold; float: right; border: 1px solid #333; }
-        .status-ok { background: var(--oko-green); color: white; }
-        .status-repair { background: #C9A85E; color: white; }
+        /* QR BOX FIX FOR SCANNING */
+        .qr-wrapper { background: white; padding: 8px; display: inline-block; border: 1px solid #ddd; margin-top: 10px; }
+        .qr-box canvas, .qr-box img { display: block; }
 
-        .btn { 
-            padding: 12px; border: 1px solid var(--oko-brown); border-radius: 4px; font-weight: bold; 
-            cursor: pointer; width: 100%; margin-bottom: 8px; font-size: 0.9rem;
-            text-transform: uppercase; background: white;
-        }
+        .btn { padding: 12px; border: 1px solid var(--oko-brown); border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 8px; text-transform: uppercase; background: white; }
         .btn-primary { background: var(--oko-green); color: white; border: none; }
-        .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
+        
+        .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
 
-        .fab { 
-            position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; 
-            background: var(--oko-green); color: white; border-radius: 50%; border: none; 
-            font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000;
-        }
-        .fab-menu { 
-            position: fixed; bottom: 85px; right: 20px; display: none; 
-            flex-direction: column; gap: 10px; z-index: 1000; 
-        }
-        .fab-menu.active { display: flex; }
-        .fab-item { background: white; padding: 10px 15px; border-radius: 4px; font-weight: bold; border: 1px solid var(--oko-beige); font-size: 0.8rem; }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; overflow-y: auto; }
+        /* MODALS */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; }
         .modal.active { display: block; }
         .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
-        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); z-index: 10; }
 
-        #reader { width: 100%; border: 1px solid var(--oko-beige); }
+        /* DETAIL PHOTO FIX */
+        .detail-photo { width: 100%; max-height: 300px; object-fit: contain; background: #000; border-radius: 4px; margin-bottom: 15px; }
+
+        .fab { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--oko-green); color: white; border-radius: 50%; border: none; font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; }
+        .fab-menu { position: fixed; bottom: 85px; right: 20px; display: none; flex-direction: column; gap: 10px; z-index: 1000; }
+        .fab-menu.active { display: flex; }
+        .fab-item { background: white; padding: 10px 15px; border-radius: 4px; font-weight: bold; border: 1px solid var(--oko-beige); font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="loading-overlay">
-        <h2 style="color:var(--oko-green)">Загрузка фото...</h2>
-        <p>Пожалуйста, подождите</p>
-    </div>
+    <div id="loader" class="loading-overlay"><h2>ОБРАБОТКА...</h2></div>
 
     <div id="login-screen">
         <div class="login-card">
-            <h1 style="color: var(--oko-green); margin-bottom: 10px;">ИНВЕНТАРЬ ОКО</h1>
+            <h1 style="color: var(--oko-green);">ИНВЕНТАРЬ ОКО</h1><br>
             <input type="text" id="user-login" class="search-box" placeholder="Логин">
             <input type="password" id="user-pass" class="search-box" placeholder="Пароль">
             <button class="btn btn-primary" onclick="checkAccess()">Войти</button>
@@ -122,54 +87,39 @@
     <div id="main-app">
         <div class="container">
             <header>
-                <h1>📦 Инвентарь ОКО</h1>
-                <button class="logout-btn" onclick="logout()">ВЫЙТИ (Sam)</button>
+                <h1>📦 ОКО</h1>
+                <button class="logout-btn" onclick="logout()">ВЫЙТИ</button>
             </header>
-
             <div class="stats-bar">
-                <div class="stat-card"><div class="stat-number" id="totalItems">0</div><div class="stat-label">Всего</div></div>
-                <div class="stat-card"><div class="stat-number" id="okItems">0</div><div class="stat-label">ОК</div></div>
-                <div class="stat-card"><div class="stat-number" id="repairItems">0</div><div class="stat-label">Ремонт</div></div>
-                <div class="stat-card"><div class="stat-number" id="checkToday">0</div><div class="stat-label">Сегодня</div></div>
+                <div class="stat-card"><div class="stat-number" id="totalItems">0</div><div style="font-size:0.6rem">ВСЕГО</div></div>
+                <div class="stat-card"><div class="stat-number" id="okItems">0</div><div style="font-size:0.6rem">ОК</div></div>
+                <div class="stat-card"><div class="stat-number" id="repairItems">0</div><div style="font-size:0.6rem">РЕМОНТ</div></div>
+                <div class="stat-card"><div class="stat-number" id="checkToday">0</div><div style="font-size:0.6rem">СЕГОДНЯ</div></div>
             </div>
-
-            <input type="text" class="search-box" id="searchInput" placeholder="Поиск по названию или ID..." onkeyup="renderItems()">
-
+            <input type="text" class="search-box" id="searchInput" placeholder="Поиск..." onkeyup="renderItems()">
             <div id="itemsContainer"></div>
         </div>
-
         <button class="fab" onclick="document.getElementById('fabMenu').classList.toggle('active')">+</button>
         <div class="fab-menu" id="fabMenu">
-            <button class="fab-item" onclick="openAddModal()">Добавить предмет</button>
-            <button class="fab-item" onclick="openScanner()">Сканировать QR</button>
-            <button class="fab-item" onclick="exportToExcel()">Excel Отчет</button>
+            <button class="fab-item" onclick="openAddModal()">Добавить</button>
+            <button class="fab-item" onclick="openScanner()">Сканер</button>
+            <button class="fab-item" onclick="exportToExcel()">Excel</button>
         </div>
     </div>
 
-    <!-- Modal: Add -->
     <div id="addModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
-        <h2 style="color:var(--oko-green); margin-bottom: 20px;">НОВЫЙ ОБЪЕКТ</h2>
-        <label>ID:</label>
-        <input type="text" id="addId" class="search-box" readonly style="background:#eee;">
-        <label>Название:</label>
+        <h2>НОВЫЙ ОБЪЕКТ</h2><br>
+        <input type="text" id="addId" class="search-box" readonly>
         <input type="text" id="addName" class="search-box" placeholder="Название">
-        
-        <label>Локация:</label>
         <select id="addLoc" class="search-box" onchange="updateSubCats()">
-            <option value="Офис">Офис</option>
-            <option value="Зал">Зал</option>
-            <option value="Кухня">Кухня</option>
-            <option value="Бар">Бар</option>
+            <option value="Офис">Офис</option><option value="Зал">Зал</option>
+            <option value="Кухня">Кухня</option><option value="Бар">Бар</option>
             <option value="Склад">Склад</option>
         </select>
-        
         <div id="subCatArea" style="display:none;">
-            <label>Подраздел (Категория):</label>
             <select id="addSubCat" class="search-box"></select>
         </div>
-
-        <label>Фотография (рекомендуется):</label>
         <input type="file" id="addPhoto" class="search-box" accept="image/*">
         <button class="btn btn-primary" onclick="saveNewItem()">Сохранить</button>
     </div></div>
@@ -182,176 +132,122 @@
     </div></div>
 
     <script>
-        const OWNER_LOGIN = "Sam";
-        const OWNER_PASS = "oko2024";
-
+        const OWNER_LOGIN = "Sam", OWNER_PASS = "oko2024";
         const firebaseConfig = {
             apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
             authDomain: "inventory-oko.firebaseapp.com",
             databaseURL: "https://inventory-oko-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "inventory-oko",
-            storageBucket: "inventory-oko.firebasestorage.app", // Здесь ваше хранилище
+            storageBucket: "inventory-oko.firebasestorage.app",
             messagingSenderId: "528327448142",
             appId: "1:528327448142:web:c0bde5327bd1464c81951f"
         };
 
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const storage = firebase.storage();
-
+        const db = firebase.database(), storage = firebase.storage();
         let items = [];
-        let html5QrCode = null;
-        const BASE_URL = window.location.origin + window.location.pathname;
 
         function checkAccess() {
             if (document.getElementById('user-login').value === OWNER_LOGIN && document.getElementById('user-pass').value === OWNER_PASS) {
-                localStorage.setItem('oko_auth', 'true');
-                showApp();
+                localStorage.setItem('oko_auth', 'true'); showApp();
             } else alert("Ошибка");
         }
-
         function logout() { localStorage.removeItem('oko_auth'); location.reload(); }
         if (localStorage.getItem('oko_auth') === 'true') showApp();
 
         function showApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            db.ref('inventory').on('value', (snap) => {
+            db.ref('inventory').on('value', snap => {
                 items = snap.val() ? Object.values(snap.val()) : [];
-                renderItems();
-                updateStats();
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('id')) {
-                    showItemDetails(urlParams.get('id'));
-                    window.history.replaceState({}, '', BASE_URL);
-                }
+                renderItems(); updateStats();
+                const urlId = new URLSearchParams(window.location.search).get('id');
+                if (urlId) { window.history.replaceState({}, '', window.location.origin + window.location.pathname); showItemDetails(urlId); }
             });
         }
 
         function updateSubCats() {
-            const loc = document.getElementById('addLoc').value;
-            const area = document.getElementById('subCatArea');
-            const sub = document.getElementById('addSubCat');
-            sub.innerHTML = '';
-            let options = [];
-            if (loc === 'Зал') options = ['Стулья', 'Столы', 'Диваны'];
-            else if (loc === 'Кухня' || loc === 'Бар') options = ['Холодильники'];
-
-            if (options.length > 0) {
+            const loc = document.getElementById('addLoc').value, area = document.getElementById('subCatArea'), sub = document.getElementById('addSubCat');
+            sub.innerHTML = ''; let opts = [];
+            if (loc === 'Зал') opts = ['Стулья', 'Столы', 'Диваны'];
+            else if (loc === 'Кухня' || loc === 'Бар') opts = ['Холодильники'];
+            if (opts.length) {
                 area.style.display = 'block';
-                options.forEach(o => {
-                    let opt = document.createElement('option');
-                    opt.value = o; opt.innerText = o;
-                    sub.appendChild(opt);
-                });
+                opts.forEach(o => { let opt = document.createElement('option'); opt.value = o; opt.innerText = o; sub.appendChild(opt); });
             } else area.style.display = 'none';
         }
 
-        function generateId() { return 'OKO-' + Math.floor(1000 + Math.random() * 9000); }
-        function openAddModal() {
-            document.getElementById('addId').value = generateId();
-            updateSubCats();
-            document.getElementById('addModal').classList.add('active');
-        }
+        function openAddModal() { document.getElementById('addId').value = 'OKO-'+Math.floor(1000+Math.random()*9000); updateSubCats(); document.getElementById('addModal').classList.add('active'); }
 
         async function saveNewItem() {
-            const id = document.getElementById('addId').value;
-            const name = document.getElementById('addName').value.trim();
-            const loc = document.getElementById('addLoc').value;
-            const sub = document.getElementById('addSubCat').value || 'Прочее';
-            const photoFile = document.getElementById('addPhoto').files[0];
-            
-            if (!name) return alert("Введите название");
-            
+            const id = document.getElementById('addId').value, name = document.getElementById('addName').value.trim(), loc = document.getElementById('addLoc').value;
+            const sub = document.getElementById('addSubCat').value || 'Прочее', file = document.getElementById('addPhoto').files[0];
+            if (!name) return alert("Имя!");
             document.getElementById('loader').style.display = 'flex';
-
-            let photoUrl = "";
-            if (photoFile) {
-                try {
-                    const storageRef = storage.ref(`photos/${id}`);
-                    const snapshot = await storageRef.put(photoFile);
-                    photoUrl = await snapshot.ref.getDownloadURL();
-                } catch (e) {
-                    console.error("Ошибка загрузки фото:", e);
-                }
-            }
-
-            db.ref('inventory/' + id).set({
-                id, name, loc, sub, photo: photoUrl, status: 'ok', 
-                addedDate: new Date().toLocaleDateString('ru-RU'), lastCheck: 'Нет'
-            }).then(() => {
-                document.getElementById('loader').style.display = 'none';
-                closeModal('addModal');
-                document.getElementById('addName').value = '';
-            });
+            let url = "";
+            if (file) { try { const snap = await storage.ref(`photos/${id}`).put(file); url = await snap.ref.getDownloadURL(); } catch (e) {} }
+            db.ref('inventory/' + id).set({ id, name, loc, sub, photo: url, status: 'ok', addedDate: new Date().toLocaleDateString('ru-RU'), lastCheck: 'Нет' })
+            .then(() => { document.getElementById('loader').style.display = 'none'; closeModal('addModal'); });
         }
 
         function renderItems() {
-            const container = document.getElementById('itemsContainer');
-            const search = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('itemsContainer'), search = document.getElementById('searchInput').value.toLowerCase();
             container.innerHTML = '';
-
-            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search))
-            .forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'item-card';
+            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search)).forEach(item => {
+                const div = document.createElement('div'); div.className = 'item-card';
                 div.onclick = () => showItemDetails(item.id);
                 div.innerHTML = `
-                    <img src="${item.photo || 'https://via.placeholder.com/400x200?text=OKO'}" class="item-image" loading="lazy">
+                    <img src="${item.photo || 'https://via.placeholder.com/400x200?text=OKO'}" class="item-image">
                     <div class="item-content">
                         <span class="status-badge status-${item.status}">${item.status.toUpperCase()}</span>
                         <div style="font-weight:bold;">${item.name}</div>
-                        <div style="font-size:0.8rem; color:gray;">ID: ${item.id} | 📍 ${item.loc} (${item.sub})</div>
-                        <div id="qr-${item.id}" style="margin-top:10px; width:50px; height:50px;"></div>
-                    </div>
-                `;
+                        <div style="font-size:0.8rem;">ID: ${item.id} | 📍 ${item.loc}</div>
+                        <div class="qr-wrapper"><div id="qr-${item.id}" class="qr-box"></div></div>
+                    </div>`;
                 container.appendChild(div);
-                setTimeout(() => {
-                    new QRCode(document.getElementById(`qr-${item.id}`), { text: BASE_URL + "?id=" + item.id, width: 50, height: 50 });
-                }, 50);
+                const qrText = window.location.origin + window.location.pathname + "?id=" + item.id;
+                new QRCode(document.getElementById(`qr-${item.id}`), { text: qrText, width: 80, height: 80, correctLevel: QRCode.CorrectLevel.H });
             });
         }
 
         function showItemDetails(id) {
-            const item = items.find(i => i.id === id);
-            if (!item) return;
+            const item = items.find(i => i.id === id); if (!item) return;
             const content = document.getElementById('itemModalContent');
             content.innerHTML = `
                 <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
-                <img src="${item.photo || ''}" style="width:100%; border-radius:4px; margin-bottom:15px;">
+                <img src="${item.photo || ''}" class="detail-photo">
                 <h2 style="color:var(--oko-green)">${item.name}</h2>
-                <div style="padding:10px; background:#fff; border:1px solid #ddd; margin:10px 0;">
-                    <b>ID:</b> ${item.id}<br>
-                    <b>Локация:</b> ${item.loc} (${item.sub})<br>
-                    <b>Добавлен:</b> ${item.addedDate}<br>
-                    <b>Проверка:</b> ${item.lastCheck}
+                <div style="padding:10px; border:1px solid #ddd; margin:10px 0; background:#fff;">
+                    <b>ID:</b> ${item.id}<br><b>Локация:</b> ${item.loc} (${item.sub})<br>
+                    <b>Добавлен:</b> ${item.addedDate}<br><b>Проверка:</b> ${item.lastCheck}
                 </div>
                 <button class="btn btn-primary" onclick="markInv('${item.id}')">Инвентаризация проведена</button>
-                <button class="btn" onclick="upStat('${item.id}', 'repair')">Отправить в ремонт</button>
-                <button class="btn btn-danger" onclick="delItem('${item.id}')">Удалить предмет</button>
-            `;
+                <button class="btn" onclick="upStat('${item.id}', 'repair')">В ремонт</button>
+                <button class="btn" onclick="printItemQR('${item.id}')">Печать QR</button>
+                <button class="btn btn-danger" onclick="delItem('${item.id}')">Удалить</button>`;
             document.getElementById('itemModal').classList.add('active');
         }
 
-        function markInv(id) {
-            const today = new Date().toLocaleDateString('ru-RU');
-            db.ref('inventory/' + id).update({lastCheck: today});
-            closeModal('itemModal');
-        }
+        function markInv(id) { db.ref('inventory/'+id).update({lastCheck: new Date().toLocaleDateString('ru-RU')}); closeModal('itemModal'); }
+        function upStat(id, s) { db.ref('inventory/'+id).update({status: s}); closeModal('itemModal'); }
+        async function delItem(id) { if(confirm("Удалить?")) { try { await storage.ref(`photos/${id}`).delete(); } catch(e) {} db.ref('inventory/'+id).remove(); closeModal('itemModal'); } }
 
-        function upStat(id, s) {
-            db.ref('inventory/' + id).update({status: s});
-            closeModal('itemModal');
+        function openScanner() {
+            document.getElementById('scannerModal').classList.add('active');
+            const html5 = new Html5Qrcode("reader");
+            html5.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, text => {
+                const id = text.includes('?id=') ? text.split('?id=')[1] : text;
+                html5.stop().then(() => { closeModal('scannerModal'); showItemDetails(id); });
+            });
         }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function closeScanner() { closeModal('scannerModal'); }
 
-        async function delItem(id) {
-            if(confirm("Удалить предмет?")) {
-                try {
-                    await storage.ref(`photos/${id}`).delete();
-                } catch(e) {}
-                db.ref('inventory/' + id).remove(); 
-                closeModal('itemModal');
-            }
+        function printItemQR(id) {
+            const it = items.find(i => i.id === id), qrUrl = window.location.origin + window.location.pathname + "?id=" + id;
+            const win = window.open('', '_blank');
+            win.document.write(`<html><body style="text-align:center; padding:30px;"><h2 style="font-family:serif;">${it.name}</h2><div id="q" style="display:inline-block; padding:10px; border:1px solid #000;"></div><p style="font-family:serif; font-weight:bold;">${it.id}</p><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById('q'), {text:"${qrUrl}", width:150, height:150, correctLevel: QRCode.CorrectLevel.H}); setTimeout(()=>window.print(), 700);<\/script></body></html>`);
+            win.document.close();
         }
 
         function updateStats() {
@@ -362,24 +258,10 @@
             document.getElementById('checkToday').innerText = items.filter(i => i.lastCheck === today).length;
         }
 
-        function openScanner() {
-            document.getElementById('scannerModal').classList.add('active');
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-                const id = text.includes('?id=') ? text.split('?id=')[1] : text;
-                stopScanner(); showItemDetails(id);
-            });
-        }
-        function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => closeModal('scannerModal')); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-        function closeScanner() { stopScanner(); }
-
         function exportToExcel() {
-            const data = items.map(i => ({ID: i.id, Имя: i.name, Место: i.loc, Категория: i.sub, Статус: i.status, Последняя_проверка: i.lastCheck}));
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-            XLSX.writeFile(wb, "OKO_Report.xlsx");
+            const data = items.map(i => ({ID: i.id, Имя: i.name, Локация: i.loc, Категория: i.sub, Проверка: i.lastCheck}));
+            const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventory"); XLSX.writeFile(wb, "OKO_Report.xlsx");
         }
     </script>
 </body>

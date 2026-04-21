@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Инвентарь ОКО</title>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (Добавили модуль Storage) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Библиотеки -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -15,131 +16,114 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        /* БРЕНДОВЫЕ ЦВЕТА OKO */
         :root {
-            --sig-green: #5C6041;
-            --nat-beige: #D9D1B5;
-            --earth-brown: #3B352A;
-            --ivory-white: #F4EEDC;
-            --olive-mist: #B9B28D;
-            --gold-sand: #C9A85E;
-            --palm-leaf: #6E7151;
+            --oko-green: #5C6041;
+            --oko-beige: #D9D1B5;
+            --oko-brown: #3B352A;
+            --oko-white: #F4EEDC;
         }
 
-        /* ШРИФТ И ОСНОВНЫЕ СТИЛИ */
         * { 
             margin: 0; padding: 0; box-sizing: border-box; 
-            font-family: 'Evolenta', 'Segoe UI', sans-serif; 
+            font-family: "Times New Roman", Times, serif; 
             -webkit-tap-highlight-color: transparent;
         }
         
-        body { background-color: var(--ivory-white); color: var(--earth-brown); min-height: 100vh; }
+        body { background-color: var(--oko-white); color: var(--oko-brown); min-height: 100vh; }
 
-        /* ЭКРАН ВХОДА */
+        /* ВХОД */
         #login-screen {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; padding: 20px; background: var(--ivory-white);
+            height: 100vh; padding: 20px;
         }
         .login-card {
-            background: white; padding: 40px 30px; border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(59, 53, 42, 0.15); width: 100%; max-width: 400px; text-align: center;
-            border: 1px solid var(--nat-beige);
+            background: white; padding: 30px; border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center;
+            border: 2px solid var(--oko-beige);
         }
 
-        /* ОСНОВНОЕ ПРИЛОЖЕНИЕ */
-        #main-app { display: none; padding-bottom: 100px; }
-        .container { max-width: 800px; margin: 0 auto; padding: 15px; }
+        /* ПРИЛОЖЕНИЕ */
+        #main-app { display: none; padding-bottom: 80px; }
+        .container { max-width: 700px; margin: 0 auto; padding: 10px; }
 
-        header { text-align: center; padding: 25px 0; color: var(--sig-green); }
-        header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: 1px; }
+        header { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 0; border-bottom: 1px solid var(--oko-beige); margin-bottom: 15px; 
+        }
+        header h1 { font-size: 1.4rem; font-weight: bold; color: var(--oko-green); text-transform: uppercase; }
+        .logout-btn { padding: 5px 10px; font-size: 0.8rem; background: var(--oko-brown); color: white; border: none; cursor: pointer; border-radius: 2px; }
 
-        /* СТАТИСТИКА */
-        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
-        .stat-card { background: var(--nat-beige); padding: 12px 5px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--sig-green); }
-        .stat-number { font-size: 1.1rem; font-weight: 800; color: var(--sig-green); }
-        .stat-label { font-size: 0.55rem; text-transform: uppercase; font-weight: 700; }
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
+        .stat-card { background: var(--oko-beige); padding: 10px 2px; border-radius: 4px; text-align: center; }
+        .stat-number { font-size: 1.1rem; font-weight: bold; color: var(--oko-green); }
+        .stat-label { font-size: 0.65rem; text-transform: uppercase; }
 
         .search-box { 
-            width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--olive-mist); 
-            margin-bottom: 20px; outline: none; font-size: 1rem; background: white;
+            width: 100%; padding: 12px; border: 1px solid var(--oko-beige); 
+            margin-bottom: 15px; outline: none; font-size: 1rem; background: white;
         }
 
         /* КАРТОЧКИ */
         .item-card { 
-            background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px; 
-            border: 1px solid var(--nat-beige); box-shadow: 0 4px 12px rgba(0,0,0,0.05); cursor: pointer;
+            background: white; border-radius: 4px; overflow: hidden; margin-bottom: 12px; 
+            border: 1px solid var(--oko-beige); cursor: pointer;
         }
-        .item-image { width: 100%; height: 220px; object-fit: cover; background: var(--nat-beige); }
-        .item-content { padding: 18px; }
+        .item-image { width: 100%; height: 200px; object-fit: cover; background: #eee; }
+        .item-content { padding: 12px; }
 
-        .status-badge { padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; float: right; text-transform: uppercase; }
-        .status-ok { background: var(--sig-green); color: white; }
-        .status-repair { background: var(--gold-sand); color: white; }
+        .status-badge { padding: 2px 8px; border-radius: 2px; font-size: 0.7rem; font-weight: bold; float: right; border: 1px solid #333; }
+        .status-ok { background: var(--oko-green); color: white; }
+        .status-repair { background: #C9A85E; color: white; }
 
         .btn { 
-            padding: 14px; border: none; border-radius: 8px; font-weight: 800; 
-            cursor: pointer; width: 100%; margin-bottom: 10px; font-size: 0.85rem;
-            text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px; border: 1px solid var(--oko-brown); border-radius: 4px; font-weight: bold; 
+            cursor: pointer; width: 100%; margin-bottom: 8px; font-size: 0.9rem;
+            text-transform: uppercase; background: white;
         }
-        .btn-primary { background: var(--sig-green); color: white; }
-        .btn-danger { background: var(--earth-brown); color: white; }
-        .btn-secondary { background: var(--olive-mist); color: white; }
-        .btn-success { background: var(--palm-leaf); color: white; }
+        .btn-primary { background: var(--oko-green); color: white; border: none; }
+        .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
 
-        /* FAB */
         .fab { 
-            position: fixed; bottom: 25px; right: 25px; width: 65px; height: 65px; 
-            background: var(--sig-green); color: white; border-radius: 50%; border: none; 
-            font-size: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 1000;
+            position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; 
+            background: var(--oko-green); color: white; border-radius: 50%; border: none; 
+            font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000;
         }
         .fab-menu { 
-            position: fixed; bottom: 95px; right: 25px; display: none; 
-            flex-direction: column; gap: 12px; z-index: 1000; 
+            position: fixed; bottom: 85px; right: 20px; display: none; 
+            flex-direction: column; gap: 10px; z-index: 1000; 
         }
         .fab-menu.active { display: flex; }
-        .fab-item { background: white; padding: 12px 20px; border-radius: 20px; font-weight: 800; border: 1px solid var(--nat-beige); font-size: 0.75rem; color: var(--sig-green); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .fab-item { background: white; padding: 10px 15px; border-radius: 4px; font-weight: bold; border: 1px solid var(--oko-beige); font-size: 0.8rem; }
 
-        /* МОДАЛКИ */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(47, 49, 38, 0.9); z-index: 2000; overflow-y: auto; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; overflow-y: auto; }
         .modal.active { display: block; }
-        .modal-content { background: var(--ivory-white); min-height: 100vh; padding: 25px; position: relative; }
-        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--earth-brown); z-index: 10; }
+        .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); }
 
-        .detail-photo { width: 100%; height: 280px; object-fit: cover; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--nat-beige); }
-        .detail-info { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--nat-beige); margin-bottom: 20px; line-height: 1.8;}
-        .detail-info b { color: var(--sig-green); font-weight: 800; }
-
-        .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-        .tab { flex: 1; padding: 12px; background: var(--nat-beige); border: none; border-radius: 8px; font-size: 0.7rem; font-weight: 800; cursor: pointer; text-transform: uppercase; color: var(--sig-green); }
-        .tab.active { background: var(--sig-green); color: white; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        .history-item { border-left: 3px solid var(--sig-green); padding: 5px 15px; margin-bottom: 15px; font-size: 0.85rem; }
-        .history-date { font-size: 0.7rem; color: var(--sig-green); font-weight: 800; }
-
-        #reader { width: 100%; border-radius: 12px; overflow: hidden; border: 2px solid var(--nat-beige); }
+        #reader { width: 100%; border: 1px solid var(--oko-beige); }
     </style>
 </head>
 <body>
 
-    <!-- ЭКРАН ВХОДА -->
+    <div id="loader" class="loading-overlay">
+        <h2 style="color:var(--oko-green)">Загрузка фото...</h2>
+        <p>Пожалуйста, подождите</p>
+    </div>
+
     <div id="login-screen">
         <div class="login-card">
-            <h1 style="color: var(--sig-green); margin-bottom: 5px;">📦 ИНВЕНТАРЬ ОКО</h1>
-            <p style="margin-bottom: 25px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--olive-mist);">Авторизация владельца</p>
+            <h1 style="color: var(--oko-green); margin-bottom: 10px;">ИНВЕНТАРЬ ОКО</h1>
             <input type="text" id="user-login" class="search-box" placeholder="Логин">
             <input type="password" id="user-pass" class="search-box" placeholder="Пароль">
-            <button class="btn btn-primary" onclick="checkAccess()">Войти в систему</button>
+            <button class="btn btn-primary" onclick="checkAccess()">Войти</button>
         </div>
     </div>
 
-    <!-- ПРИЛОЖЕНИЕ -->
     <div id="main-app">
         <div class="container">
             <header>
                 <h1>📦 Инвентарь ОКО</h1>
-                <button onclick="logout()" style="background:none; border:none; color:var(--gold-sand); font-weight:800; cursor:pointer; font-size:0.7rem; margin-top:5px; letter-spacing:1px;">ВЫЙТИ (Sam)</button>
+                <button class="logout-btn" onclick="logout()">ВЫЙТИ (Sam)</button>
             </header>
 
             <div class="stats-bar">
@@ -154,149 +138,152 @@
             <div id="itemsContainer"></div>
         </div>
 
-        <div class="fab-container">
-            <div class="fab-menu" id="fabMenu">
-                <button class="fab-item" onclick="openAddModal()">Добавить предмет</button>
-                <button class="fab-item" onclick="openScanner()">Сканировать QR</button>
-                <button class="fab-item" onclick="exportToExcel()">Отчет Excel</button>
-            </div>
-            <button class="fab" onclick="document.getElementById('fabMenu').classList.toggle('active')">+</button>
+        <button class="fab" onclick="document.getElementById('fabMenu').classList.toggle('active')">+</button>
+        <div class="fab-menu" id="fabMenu">
+            <button class="fab-item" onclick="openAddModal()">Добавить предмет</button>
+            <button class="fab-item" onclick="openScanner()">Сканировать QR</button>
+            <button class="fab-item" onclick="exportToExcel()">Excel Отчет</button>
         </div>
     </div>
 
-    <!-- МОДАЛКИ -->
+    <!-- Modal: Add -->
     <div id="addModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
-        <h2 style="color:var(--sig-green); font-weight:800; margin-bottom: 25px;">НОВЫЙ ОБЪЕКТ</h2>
-        <div class="form-group" style="margin-bottom:15px;">
-            <label style="font-size:0.7rem; font-weight:800; color:var(--sig-green); display:block; margin-bottom:5px;">ID НОМЕР</label>
-            <input type="text" id="addId" class="search-box" readonly style="background:#f0f0f0;">
+        <h2 style="color:var(--oko-green); margin-bottom: 20px;">НОВЫЙ ОБЪЕКТ</h2>
+        <label>ID:</label>
+        <input type="text" id="addId" class="search-box" readonly style="background:#eee;">
+        <label>Название:</label>
+        <input type="text" id="addName" class="search-box" placeholder="Название">
+        
+        <label>Локация:</label>
+        <select id="addLoc" class="search-box" onchange="updateSubCats()">
+            <option value="Офис">Офис</option>
+            <option value="Зал">Зал</option>
+            <option value="Кухня">Кухня</option>
+            <option value="Бар">Бар</option>
+            <option value="Склад">Склад</option>
+        </select>
+        
+        <div id="subCatArea" style="display:none;">
+            <label>Подраздел (Категория):</label>
+            <select id="addSubCat" class="search-box"></select>
         </div>
-        <div class="form-group" style="margin-bottom:15px;">
-            <label style="font-size:0.7rem; font-weight:800; color:var(--sig-green); display:block; margin-bottom:5px;">НАЗВАНИЕ</label>
-            <input type="text" id="addName" class="search-box" placeholder="Название предмета">
-        </div>
-        <div class="form-group" style="margin-bottom:15px;">
-            <label style="font-size:0.7rem; font-weight:800; color:var(--sig-green); display:block; margin-bottom:5px;">ЛОКАЦИЯ</label>
-            <select id="addLoc" class="search-box">
-                <option value="Офис">Офис</option><option value="Склад">Склад</option>
-                <option value="Зал">Зал</option><option value="Кухня">Кухня</option><option value="Бар">Бар</option>
-            </select>
-        </div>
-        <div class="form-group" style="margin-bottom:20px;">
-            <label style="font-size:0.7rem; font-weight:800; color:var(--sig-green); display:block; margin-bottom:5px;">ФОТОГРАФИЯ</label>
-            <input type="file" id="addPhoto" class="search-box" accept="image/*">
-        </div>
-        <button class="btn btn-primary" onclick="saveNewItem()">Поставить на учет</button>
+
+        <label>Фотография (рекомендуется):</label>
+        <input type="file" id="addPhoto" class="search-box" accept="image/*">
+        <button class="btn btn-primary" onclick="saveNewItem()">Сохранить</button>
     </div></div>
 
     <div id="itemModal" class="modal"><div class="modal-content" id="itemModalContent"></div></div>
 
     <div id="scannerModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeScanner()">&times;</button>
-        <h2 style="text-align:center; color:var(--sig-green); font-weight:800;">СКАНЕР</h2><br>
         <div id="reader"></div>
     </div></div>
 
     <script>
-        // --- ДАННЫЕ ДЛЯ ВХОДА ---
         const OWNER_LOGIN = "Sam";
         const OWNER_PASS = "oko2024";
 
-        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
             authDomain: "inventory-oko.firebaseapp.com",
             databaseURL: "https://inventory-oko-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "inventory-oko",
-            storageBucket: "inventory-oko.firebasestorage.app",
+            storageBucket: "inventory-oko.firebasestorage.app", // Здесь ваше хранилище
             messagingSenderId: "528327448142",
             appId: "1:528327448142:web:c0bde5327bd1464c81951f"
         };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const storage = firebase.storage();
+
         let items = [];
         let html5QrCode = null;
         const BASE_URL = window.location.origin + window.location.pathname;
 
-        // --- ЛОГИКА АВТОРИЗАЦИИ ---
         function checkAccess() {
-            const l = document.getElementById('user-login').value;
-            const p = document.getElementById('user-pass').value;
-            if (l === OWNER_LOGIN && p === OWNER_PASS) {
+            if (document.getElementById('user-login').value === OWNER_LOGIN && document.getElementById('user-pass').value === OWNER_PASS) {
                 localStorage.setItem('oko_auth', 'true');
                 showApp();
-            } else {
-                alert("Ошибка: Неверный логин или пароль");
-            }
+            } else alert("Ошибка");
         }
+
+        function logout() { localStorage.removeItem('oko_auth'); location.reload(); }
+        if (localStorage.getItem('oko_auth') === 'true') showApp();
 
         function showApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            loadFirebaseData();
-        }
-
-        function logout() {
-            localStorage.removeItem('oko_auth');
-            location.reload();
-        }
-
-        if (localStorage.getItem('oko_auth') === 'true') {
-            showApp();
-        }
-
-        function loadFirebaseData() {
-            db.ref('inventory').on('value', (snapshot) => {
-                const data = snapshot.val();
-                items = data ? Object.values(data) : [];
+            db.ref('inventory').on('value', (snap) => {
+                items = snap.val() ? Object.values(snap.val()) : [];
                 renderItems();
                 updateStats();
-                
                 const urlParams = new URLSearchParams(window.location.search);
-                const autoId = urlParams.get('id');
-                if (autoId) {
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    showItemDetails(autoId);
+                if (urlParams.get('id')) {
+                    showItemDetails(urlParams.get('id'));
+                    window.history.replaceState({}, '', BASE_URL);
                 }
             });
         }
 
-        // --- ФУНКЦИИ ИНВЕНТАРЯ ---
-        function generateId() { return 'OKO-' + Math.floor(1000 + Math.random() * 9000); }
+        function updateSubCats() {
+            const loc = document.getElementById('addLoc').value;
+            const area = document.getElementById('subCatArea');
+            const sub = document.getElementById('addSubCat');
+            sub.innerHTML = '';
+            let options = [];
+            if (loc === 'Зал') options = ['Стулья', 'Столы', 'Диваны'];
+            else if (loc === 'Кухня' || loc === 'Бар') options = ['Холодильники'];
 
+            if (options.length > 0) {
+                area.style.display = 'block';
+                options.forEach(o => {
+                    let opt = document.createElement('option');
+                    opt.value = o; opt.innerText = o;
+                    sub.appendChild(opt);
+                });
+            } else area.style.display = 'none';
+        }
+
+        function generateId() { return 'OKO-' + Math.floor(1000 + Math.random() * 9000); }
         function openAddModal() {
             document.getElementById('addId').value = generateId();
-            document.getElementById('fabMenu').classList.remove('active');
+            updateSubCats();
             document.getElementById('addModal').classList.add('active');
         }
 
-        function saveNewItem() {
+        async function saveNewItem() {
             const id = document.getElementById('addId').value;
             const name = document.getElementById('addName').value.trim();
             const loc = document.getElementById('addLoc').value;
+            const sub = document.getElementById('addSubCat').value || 'Прочее';
             const photoFile = document.getElementById('addPhoto').files[0];
-            const date = new Date().toLocaleDateString('ru-RU');
+            
+            if (!name) return alert("Введите название");
+            
+            document.getElementById('loader').style.display = 'flex';
 
-            if (!name) return alert("Введите название!");
-
-            const save = (img = "") => {
-                db.ref('inventory/' + id).set({
-                    id, name, loc, photo: img, status: 'ok', addedDate: date, lastCheck: 'Нет',
-                    history: [{date: new Date().toISOString(), msg: `Поставлен на учет в: ${loc}`}]
-                }).then(() => {
-                    closeModal('addModal');
-                    document.getElementById('addName').value = '';
-                    document.getElementById('addPhoto').value = '';
-                });
-            };
-
+            let photoUrl = "";
             if (photoFile) {
-                const reader = new FileReader();
-                reader.onload = e => save(e.target.result);
-                reader.readAsDataURL(photoFile);
-            } else save();
+                try {
+                    const storageRef = storage.ref(`photos/${id}`);
+                    const snapshot = await storageRef.put(photoFile);
+                    photoUrl = await snapshot.ref.getDownloadURL();
+                } catch (e) {
+                    console.error("Ошибка загрузки фото:", e);
+                }
+            }
+
+            db.ref('inventory/' + id).set({
+                id, name, loc, sub, photo: photoUrl, status: 'ok', 
+                addedDate: new Date().toLocaleDateString('ru-RU'), lastCheck: 'Нет'
+            }).then(() => {
+                document.getElementById('loader').style.display = 'none';
+                closeModal('addModal');
+                document.getElementById('addName').value = '';
+            });
         }
 
         function renderItems() {
@@ -309,22 +296,19 @@
                 const div = document.createElement('div');
                 div.className = 'item-card';
                 div.onclick = () => showItemDetails(item.id);
-                const qrUrl = BASE_URL + "?id=" + item.id;
-
                 div.innerHTML = `
-                    <img src="${item.photo || 'https://via.placeholder.com/400x220?text=OKO+Inventory'}" class="item-image">
+                    <img src="${item.photo || 'https://via.placeholder.com/400x200?text=OKO'}" class="item-image" loading="lazy">
                     <div class="item-content">
-                        <span class="status-badge status-${item.status}">${item.status === 'ok' ? 'ОК' : 'Ремонт'}</span>
-                        <div style="font-weight:800; font-size:1.25rem; color:var(--deep-olive);">${item.name}</div>
-                        <p style="font-size:0.85rem; color:var(--palm-leaf); font-weight:700; margin-top:5px;">ID: ${item.id} | 📍 ${item.loc}</p>
-                        <div style="display:flex; align-items:center; gap:12px; margin-top:12px; border-top:1px solid var(--nat-beige); padding-top:12px;">
-                            <div id="qr-${item.id}" style="width:60px; height:60px;"></div>
-                            <span style="font-size:0.65rem; font-weight:800; color:var(--sig-green); text-transform:uppercase; letter-spacing:0.5px;">Скан для проверки</span>
-                        </div>
+                        <span class="status-badge status-${item.status}">${item.status.toUpperCase()}</span>
+                        <div style="font-weight:bold;">${item.name}</div>
+                        <div style="font-size:0.8rem; color:gray;">ID: ${item.id} | 📍 ${item.loc} (${item.sub})</div>
+                        <div id="qr-${item.id}" style="margin-top:10px; width:50px; height:50px;"></div>
                     </div>
                 `;
                 container.appendChild(div);
-                new QRCode(document.getElementById(`qr-${item.id}`), { text: qrUrl, width: 60, height: 60 });
+                setTimeout(() => {
+                    new QRCode(document.getElementById(`qr-${item.id}`), { text: BASE_URL + "?id=" + item.id, width: 50, height: 50 });
+                }, 50);
             });
         }
 
@@ -334,80 +318,40 @@
             const content = document.getElementById('itemModalContent');
             content.innerHTML = `
                 <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
-                <img src="${item.photo || 'https://via.placeholder.com/400x220?text=OKO+Inventory'}" class="detail-photo">
-                <h2 style="color:var(--sig-green); font-weight:800;">${item.name}</h2>
-                <p style="color:var(--palm-leaf); font-weight:700; margin-bottom:20px;">ID: ${item.id}</p>
-                <div class="detail-info">
-                    <b>📍 ЛОКАЦИЯ:</b> ${item.loc}<br>
-                    <b>📅 ДОБАВЛЕН:</b> ${item.addedDate || '—'}<br>
-                    <b>✅ ПОСЛЕДНЯЯ ПРОВЕРКА:</b> ${item.lastCheck || '—'}
+                <img src="${item.photo || ''}" style="width:100%; border-radius:4px; margin-bottom:15px;">
+                <h2 style="color:var(--oko-green)">${item.name}</h2>
+                <div style="padding:10px; background:#fff; border:1px solid #ddd; margin:10px 0;">
+                    <b>ID:</b> ${item.id}<br>
+                    <b>Локация:</b> ${item.loc} (${item.sub})<br>
+                    <b>Добавлен:</b> ${item.addedDate}<br>
+                    <b>Проверка:</b> ${item.lastCheck}
                 </div>
-                <div class="tabs">
-                    <button class="tab active" onclick="switchTab(event, 'act')">Действия</button>
-                    <button class="tab" onclick="switchTab(event, 'his')">История</button>
-                </div>
-                <div id="tab-act" class="tab-content active">
-                    <button class="btn btn-primary" onclick="markInv('${item.id}')">Провести инвентаризацию</button>
-                    <button class="btn btn-secondary" onclick="upStat('${item.id}', 'ok')">Статус: В порядке</button>
-                    <button class="btn btn-secondary" onclick="upStat('${item.id}', 'repair')">Статус: В ремонт</button>
-                    <button class="btn btn-success" onclick="printItemQR('${item.id}')">Печать QR-наклейки</button>
-                    <button class="btn btn-danger" onclick="delItem('${item.id}')">Удалить из базы</button>
-                </div>
-                <div id="tab-his" class="tab-content">
-                    <div style="max-height:300px; overflow-y:auto;">
-                        ${item.history ? item.history.map(h => `<div class="history-item"><div class="history-date">${new Date(h.date).toLocaleString('ru-RU')}</div><div style="font-weight:600;">${h.msg}</div></div>`).reverse().join('') : ''}
-                    </div>
-                </div>
-                <div style="margin-top:20px; border-top:1px solid var(--nat-beige); padding-top:15px;">
-                    <label style="font-size:0.7rem; font-weight:800; color:var(--sig-green);">ПЕРЕМЕСТИТЬ В:</label>
-                    <select id="quickMoveLoc" onchange="moveItem('${item.id}', this.value)" class="search-box" style="margin-top:5px;">
-                        <option value="">Выберите локацию...</option>
-                        <option value="Офис">Офис</option><option value="Склад">Склад</option>
-                        <option value="Зал">Зал</option><option value="Кухня">Кухня</option><option value="Бар">Бар</option>
-                    </select>
-                </div>
+                <button class="btn btn-primary" onclick="markInv('${item.id}')">Инвентаризация проведена</button>
+                <button class="btn" onclick="upStat('${item.id}', 'repair')">Отправить в ремонт</button>
+                <button class="btn btn-danger" onclick="delItem('${item.id}')">Удалить предмет</button>
             `;
             document.getElementById('itemModal').classList.add('active');
         }
 
         function markInv(id) {
             const today = new Date().toLocaleDateString('ru-RU');
-            const item = items.find(i => i.id === id);
-            const history = item.history || [];
-            history.push({date: new Date().toISOString(), msg: "Пройдена плановая инвентаризация"});
-            db.ref('inventory/' + id).update({lastCheck: today, history});
+            db.ref('inventory/' + id).update({lastCheck: today});
             closeModal('itemModal');
         }
 
         function upStat(id, s) {
-            const item = items.find(i => i.id === id);
-            const history = item.history || [];
-            history.push({date: new Date().toISOString(), msg: `Статус изменен на: ${s}`});
-            db.ref('inventory/' + id).update({status: s, history});
+            db.ref('inventory/' + id).update({status: s});
             closeModal('itemModal');
         }
 
-        function moveItem(id, newLoc) {
-            if(!newLoc) return;
-            const item = items.find(i => i.id === id);
-            const history = item.history || [];
-            history.push({date: new Date().toISOString(), msg: `Перемещен: ${item.loc} → ${newLoc}`});
-            db.ref('inventory/' + id).update({loc: newLoc, history});
-            closeModal('itemModal');
-        }
-
-        function delItem(id) {
-            if(confirm("Вы уверены, что хотите удалить предмет навсегда?")) {
-                db.ref('inventory/' + id).remove();
+        async function delItem(id) {
+            if(confirm("Удалить предмет?")) {
+                try {
+                    await storage.ref(`photos/${id}`).delete();
+                } catch(e) {}
+                db.ref('inventory/' + id).remove(); 
                 closeModal('itemModal');
             }
-        }
-
-        function switchTab(e, id) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
-            e.target.classList.add('active');
         }
 
         function updateStats() {
@@ -419,45 +363,23 @@
         }
 
         function openScanner() {
-            document.getElementById('fabMenu').classList.remove('active');
             document.getElementById('scannerModal').classList.add('active');
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-                let id = text.includes('?id=') ? text.split('?id=')[1] : text;
+                const id = text.includes('?id=') ? text.split('?id=')[1] : text;
                 stopScanner(); showItemDetails(id);
             });
         }
-
-        function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => closeModal('scannerModal')).catch(() => closeModal('scannerModal')); }
+        function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => closeModal('scannerModal')); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function closeScanner() { stopScanner(); }
 
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
         function exportToExcel() {
-            const data = items.map(i => ({
-                'ID': i.id, 'Название': i.name, 'Расположение': i.loc,
-                'Состояние': i.status === 'ok' ? 'Исправно' : 'Ремонт',
-                'Дата инвентаризации': i.lastCheck,
-                'Дата добавления': i.addedDate,
-                'QR Ссылка': BASE_URL + "?id=" + i.id
-            }));
+            const data = items.map(i => ({ID: i.id, Имя: i.name, Место: i.loc, Категория: i.sub, Статус: i.status, Последняя_проверка: i.lastCheck}));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-            XLSX.writeFile(wb, "Report_OKO_Sam.xlsx");
-        }
-
-        function printItemQR(id) {
-            const item = items.find(i => i.id === id);
-            const qrUrl = BASE_URL + "?id=" + id;
-            const win = window.open('', '_blank');
-            win.document.write(`
-                <html><head><style>body { text-align: center; font-family: sans-serif; padding: 20px; color: #3B352A; } h3 { margin: 5px 0; font-size: 18px; font-weight: 800; text-transform: uppercase; } #q img { margin: 0 auto; display: block; } p { font-size: 11px; font-weight: 800; margin: 5px 0; letter-spacing: 1px; }</style></head>
-                <body><h3>${item.name}</h3><div id="q"></div><p>${item.id}</p>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-                <script>new QRCode(document.getElementById('q'), { text: "${qrUrl}", width: 130, height: 130 }); setTimeout(() => { window.print(); window.close(); }, 750);<\/script></body></html>
-            `);
-            win.document.close();
+            XLSX.writeFile(wb, "OKO_Report.xlsx");
         }
     </script>
 </body>

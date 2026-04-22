@@ -1,5 +1,3 @@
---- START OF FILE index.html ---
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -27,33 +25,32 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Times New Roman", Times, serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--oko-white); color: var(--oko-brown); min-height: 100vh; }
 
-        /* LOGIN */
         #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
         .login-card { background: white; padding: 30px; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; border: 2px solid var(--oko-beige); }
 
-        /* APP */
         #main-app { display: none; padding-bottom: 80px; }
         .container { max-width: 700px; margin: 0 auto; padding: 10px; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--oko-beige); margin-bottom: 15px; }
         header h1 { font-size: 1.4rem; font-weight: bold; color: var(--oko-green); text-transform: uppercase; }
         .logout-btn { padding: 5px 10px; font-size: 0.8rem; background: var(--oko-brown); color: white; border: none; cursor: pointer; }
 
-        /* STATS */
-        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
-        .stat-card { background: var(--oko-beige); padding: 10px 2px; border-radius: 4px; text-align: center; }
+        /* СЕТКА СТАТИСТИКИ */
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 8px; }
+        .stat-card { background: var(--oko-beige); padding: 10px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
         .stat-number { font-size: 1.1rem; font-weight: bold; color: var(--oko-green); }
 
-        .search-box { width: 100%; padding: 12px; border: 1px solid var(--oko-beige); margin-bottom: 15px; outline: none; font-size: 1rem; background: white; }
+        /* Кликабельная статистика локаций */
+        .loc-stats .stat-card { cursor: pointer; background: #E5E0CD; transition: transform 0.1s, background 0.2s; }
+        .loc-stats .stat-card:active { transform: scale(0.95); background: var(--oko-beige); }
 
-        /* ITEM CARDS */
+        .search-box { width: 100%; padding: 12px; border: 1px solid var(--oko-beige); margin-bottom: 15px; outline: none; font-size: 1rem; background: white; border-radius: 4px; }
+
         .item-card { background: white; border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--oko-beige); cursor: pointer; position: relative; }
-        .status-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
-        .status-ok { background: #e8f5e9; color: #2e7d32; }
-        .status-repair { background: #ffebee; color: #c62828; }
+        .status-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; z-index: 5; }
+        .status-repair { background: #ffebee; color: #c62828; border: 1px solid #c62828; }
 
         .item-image { width: 100%; height: 180px; object-fit: cover; background: #eee; }
         .item-content { padding: 12px; }
-
         .qr-wrapper { background: white; padding: 8px; display: inline-block; border: 1px solid #ddd; margin-top: 10px; }
 
         .btn { padding: 12px; border: 1px solid var(--oko-brown); border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 8px; text-transform: uppercase; background: white; }
@@ -63,11 +60,9 @@
         
         .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
 
-        /* MODALS */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; }
         .modal.active { display: block; }
-        /* Повышаем z-index для модалки перемещения, чтобы она была над карточкой товара */
-        #transferModal { z-index: 3000; }
+        #transferModal { z-index: 3000; } /* Всегда поверх других модалок */
         
         .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); z-index: 10; }
@@ -101,15 +96,27 @@
                 <h1>📦 ОКО</h1>
                 <button class="logout-btn" onclick="logout()">ВЫЙТИ</button>
             </header>
+
+            <!-- Основная статистика -->
             <div class="stats-bar">
                 <div class="stat-card"><div class="stat-number" id="totalItems">0</div><div style="font-size:0.6rem">ВСЕГО</div></div>
                 <div class="stat-card"><div class="stat-number" id="okItems">0</div><div style="font-size:0.6rem">ОК</div></div>
                 <div class="stat-card"><div class="stat-number" id="repairItems">0</div><div style="font-size:0.6rem">РЕМОНТ</div></div>
                 <div class="stat-card"><div class="stat-number" id="checkToday">0</div><div style="font-size:0.6rem">СЕГОДНЯ</div></div>
             </div>
-            <input type="text" class="search-box" id="searchInput" placeholder="Поиск..." onkeyup="renderItems()">
+
+            <!-- Статистика по локациям (кликая, фильтруем список) -->
+            <div class="stats-bar loc-stats">
+                <div class="stat-card" onclick="filterByLoc('Зал')"><div class="stat-number" id="locHall">0</div><div style="font-size:0.6rem">ЗАЛ</div></div>
+                <div class="stat-card" onclick="filterByLoc('Кухня')"><div class="stat-number" id="locKitchen">0</div><div style="font-size:0.6rem">КУХНЯ</div></div>
+                <div class="stat-card" onclick="filterByLoc('Бар')"><div class="stat-number" id="locBar">0</div><div style="font-size:0.6rem">БАР</div></div>
+                <div class="stat-card" onclick="filterByLoc('Склад')"><div class="stat-number" id="locWh">0</div><div style="font-size:0.6rem">СКЛАД</div></div>
+            </div>
+
+            <input type="text" class="search-box" id="searchInput" placeholder="Поиск (название, ID или локация)..." onkeyup="renderItems()">
             <div id="itemsContainer"></div>
         </div>
+
         <button class="fab" onclick="document.getElementById('fabMenu').classList.toggle('active')">+</button>
         <div class="fab-menu" id="fabMenu">
             <button class="fab-item" onclick="openAddModal()">Добавить</button>
@@ -118,13 +125,12 @@
         </div>
     </div>
 
-    <!-- Модалка добавления -->
+    <!-- Модалки -->
     <div id="addModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
         <h2>НОВЫЙ ОБЪЕКТ</h2><br>
         <input type="text" id="addId" class="search-box" readonly>
         <input type="text" id="addName" class="search-box" placeholder="Название">
-        
         <label>Локация:</label>
         <select id="addLoc" class="search-box">
             <option value="Офис">Офис</option>
@@ -133,23 +139,17 @@
             <option value="Бар">Бар</option>
             <option value="Склад">Склад</option>
         </select>
-
         <label>Подгруппа:</label>
-        <select id="addSubCatSelect" class="search-box" onchange="checkNewSub('add')">
-            <!-- Заполнится динамически -->
-        </select>
-        <input type="text" id="addCustomSub" class="search-box edit-input" placeholder="Введите название подгруппы">
-        
+        <select id="addSubCatSelect" class="search-box" onchange="checkNewSub('add')"></select>
+        <input type="text" id="addCustomSub" class="search-box edit-input" placeholder="Название подгруппы">
         <input type="file" id="addPhoto" class="search-box" accept="image/*">
         <button class="btn btn-primary" onclick="saveNewItem()">Сохранить</button>
     </div></div>
 
-    <!-- Модалка перемещения (с исправленным z-index в CSS) -->
     <div id="transferModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('transferModal')">&times;</button>
-        <h2>ПЕРЕМЕЩЕНИЕ И ПОДГРУППА</h2><br>
+        <h2>ПЕРЕМЕЩЕНИЕ</h2><br>
         <input type="hidden" id="editItemId">
-        
         <label>Новая локация:</label>
         <select id="editLoc" class="search-box">
             <option value="Офис">Офис</option>
@@ -158,14 +158,10 @@
             <option value="Бар">Бар</option>
             <option value="Склад">Склад</option>
         </select>
-
         <label>Подгруппа:</label>
-        <select id="editSubCatSelect" class="search-box" onchange="checkNewSub('edit')">
-            <!-- Заполнится динамически -->
-        </select>
-        <input type="text" id="editCustomSub" class="search-box edit-input" placeholder="Введите название подгруппы">
-
-        <button class="btn btn-primary" onclick="saveTransfer()">Подтвердить изменения</button>
+        <select id="editSubCatSelect" class="search-box" onchange="checkNewSub('edit')"></select>
+        <input type="text" id="editCustomSub" class="search-box edit-input" placeholder="Название подгруппы">
+        <button class="btn btn-primary" onclick="saveTransfer()">Сохранить изменения</button>
     </div></div>
 
     <div id="itemModal" class="modal"><div class="modal-content" id="itemModalContent"></div></div>
@@ -195,7 +191,7 @@
         function checkAccess() {
             if (document.getElementById('user-login').value === OWNER_LOGIN && document.getElementById('user-pass').value === OWNER_PASS) {
                 localStorage.setItem('oko_auth', 'true'); showApp();
-            } else alert("Ошибка");
+            } else alert("Ошибка доступа");
         }
         function logout() { localStorage.removeItem('oko_auth'); location.reload(); }
         if (localStorage.getItem('oko_auth') === 'true') showApp();
@@ -218,8 +214,7 @@
         }
 
         function updateSubCategoryDropdowns() {
-            const dropdowns = ['addSubCatSelect', 'editSubCatSelect'];
-            dropdowns.forEach(id => {
+            ['addSubCatSelect', 'editSubCatSelect'].forEach(id => {
                 const select = document.getElementById(id);
                 if(!select) return;
                 select.innerHTML = '<option value="">-- Без подгруппы --</option>';
@@ -229,10 +224,8 @@
                     select.appendChild(opt);
                 });
                 const newOpt = document.createElement('option');
-                newOpt.value = "CREATE_NEW";
-                newOpt.innerText = "+ СОЗДАТЬ НОВУЮ";
-                newOpt.style.color = "blue";
-                select.appendChild(newOpt);
+                newOpt.value = "CREATE_NEW"; newOpt.innerText = "+ СОЗДАТЬ НОВУЮ";
+                newOpt.style.color = "blue"; select.appendChild(newOpt);
             });
         }
 
@@ -240,6 +233,13 @@
             const select = document.getElementById(type + 'SubCatSelect');
             const input = document.getElementById(type + 'CustomSub');
             input.style.display = (select.value === "CREATE_NEW") ? "block" : "none";
+        }
+
+        function filterByLoc(locName) {
+            const input = document.getElementById('searchInput');
+            if (input.value === locName) { input.value = ''; } 
+            else { input.value = locName; }
+            renderItems();
         }
 
         function openAddModal() { 
@@ -254,11 +254,9 @@
             const file = document.getElementById('addPhoto').files[0];
 
             if (!name) return alert("Введите имя!");
-            
             if (sub === "CREATE_NEW") {
-                if (!customSub) return alert("Введите название новой подгруппы!");
-                sub = customSub;
-                db.ref('settings/subCategories').push(sub);
+                if (!customSub) return alert("Введите название подгруппы!");
+                sub = customSub; db.ref('settings/subCategories').push(sub);
             }
 
             document.getElementById('loader').style.display = 'flex';
@@ -275,12 +273,11 @@
         function renderItems() {
             const container = document.getElementById('itemsContainer'), search = document.getElementById('searchInput').value.toLowerCase();
             container.innerHTML = '';
-            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search)).forEach(item => {
+            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search) || i.loc.toLowerCase().includes(search)).forEach(item => {
                 const div = document.createElement('div'); div.className = 'item-card';
                 div.onclick = () => showItemDetails(item.id);
                 const subText = (item.sub && item.sub !== "undefined" && item.sub !== "Прочее") ? `(${item.sub})` : "";
-                
-                const statusLabel = item.status === 'repair' ? '<div class="status-badge status-repair">В РЕМОНТЕ</div>' : '';
+                const statusLabel = item.status === 'repair' ? '<div class="status-badge status-repair">РЕМОНТ</div>' : '';
 
                 div.innerHTML = `
                     ${statusLabel}
@@ -291,8 +288,10 @@
                         <div class="qr-wrapper"><div id="qr-${item.id}" class="qr-box"></div></div>
                     </div>`;
                 container.appendChild(div);
-                const qrText = window.location.origin + window.location.pathname + "?id=" + item.id;
-                new QRCode(document.getElementById(`qr-${item.id}`), { text: qrText, width: 80, height: 80, correctLevel: QRCode.CorrectLevel.H });
+                new QRCode(document.getElementById(`qr-${item.id}`), { 
+                    text: window.location.origin + window.location.pathname + "?id=" + item.id, 
+                    width: 70, height: 70, correctLevel: QRCode.CorrectLevel.H 
+                });
             });
         }
 
@@ -301,13 +300,9 @@
             const content = document.getElementById('itemModalContent');
             const subText = (item.sub && item.sub !== "undefined") ? `(${item.sub})` : "";
             
-            // Логика кнопки статуса
-            let statusBtn = '';
-            if (item.status === 'repair') {
-                statusBtn = `<button class="btn btn-success" onclick="upStat('${item.id}', 'ok')">✅ ВЕРНУТЬ ИЗ РЕМОНТА (ОК)</button>`;
-            } else {
-                statusBtn = `<button class="btn btn-danger" onclick="upStat('${item.id}', 'repair')">🔧 ОТПРАВИТЬ В РЕМОНТ</button>`;
-            }
+            const statusBtn = item.status === 'repair' ? 
+                `<button class="btn btn-success" onclick="upStat('${item.id}', 'ok')">✅ ВЕРНУТЬ В СТРОЙ (ОК)</button>` : 
+                `<button class="btn btn-danger" onclick="upStat('${item.id}', 'repair')">🔧 В РЕМОНТ</button>`;
 
             content.innerHTML = `
                 <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
@@ -318,9 +313,7 @@
                 </div>
                 <div style="padding:15px; border:1px solid #ddd; margin:10px 0; background:#fff; border-radius:4px;">
                     <b>Статус:</b> <span style="color:${item.status==='repair'?'red':'green'}">${item.status==='repair'?'В РЕМОНТЕ':'ИСПРАВЕН'}</span><br>
-                    <b>ID:</b> ${item.id}<br>
                     <b>Локация:</b> ${item.loc} ${subText}<br>
-                    <b>Добавлен:</b> ${item.addedDate}<br>
                     <b>Проверка:</b> ${item.lastCheck}
                 </div>
                 <button class="btn btn-primary" onclick="markInv('${item.id}')">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
@@ -331,51 +324,35 @@
             document.getElementById('itemModal').classList.add('active');
         }
 
-        function editName(id, oldName) {
-            const newName = prompt("Введите новое название предмета:", oldName);
-            if (newName && newName.trim() !== "") {
-                db.ref('inventory/' + id).update({ name: newName.trim() });
-                setTimeout(() => showItemDetails(id), 500);
-            }
+        function upStat(id, s) { 
+            db.ref('inventory/'+id).update({status: s}); 
+            setTimeout(() => showItemDetails(id), 300); 
         }
 
         function openTransfer(id) {
             const item = items.find(i => i.id === id);
             document.getElementById('editItemId').value = id;
             document.getElementById('editLoc').value = item.loc;
-            
-            // Предустановка подгруппы в селекте
-            const subSelect = document.getElementById('editSubCatSelect');
-            if ([...subSelect.options].some(o => o.value === item.sub)) {
-                subSelect.value = item.sub;
-            } else {
-                subSelect.value = "";
-            }
-            
             document.getElementById('transferModal').classList.add('active');
         }
 
         function saveTransfer() {
-            const id = document.getElementById('editItemId').value;
-            const loc = document.getElementById('editLoc').value;
+            const id = document.getElementById('editItemId').value, loc = document.getElementById('editLoc').value;
             let sub = document.getElementById('editSubCatSelect').value;
             const customSub = document.getElementById('editCustomSub').value.trim();
 
             if (sub === "CREATE_NEW") {
                 if (!customSub) return alert("Введите название!");
-                sub = customSub;
-                db.ref('settings/subCategories').push(sub);
+                sub = customSub; db.ref('settings/subCategories').push(sub);
             }
 
-            db.ref('inventory/' + id).update({ 
-                loc: loc, 
-                sub: sub || "Прочее",
-                lastCheck: new Date().toLocaleDateString('ru-RU')
-            });
-            
-            closeModal('transferModal');
-            // Обновляем карточку
-            setTimeout(() => showItemDetails(id), 300);
+            db.ref('inventory/' + id).update({ loc: loc, sub: sub || "Прочее" });
+            closeModal('transferModal'); setTimeout(() => showItemDetails(id), 400);
+        }
+
+        function editName(id, old) {
+            const n = prompt("Новое название:", old);
+            if (n) { db.ref('inventory/'+id).update({name: n.trim()}); setTimeout(() => showItemDetails(id), 300); }
         }
 
         function markInv(id) { 
@@ -383,17 +360,10 @@
             closeModal('itemModal'); 
         }
 
-        function upStat(id, s) { 
-            db.ref('inventory/'+id).update({status: s}); 
-            // Не закрываем модалку сразу, а обновляем ее контент, чтобы видеть изменения
-            setTimeout(() => showItemDetails(id), 300);
-        }
-
         async function delItem(id) { 
-            if(confirm("Удалить объект навсегда?")) { 
+            if(confirm("Удалить объект?")) { 
                 try { await storage.ref(`photos/${id}`).delete(); } catch(e) {} 
-                db.ref('inventory/'+id).remove(); 
-                closeModal('itemModal'); 
+                db.ref('inventory/'+id).remove(); closeModal('itemModal'); 
             } 
         }
 
@@ -409,25 +379,31 @@
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function closeScanner() { closeModal('scannerModal'); }
 
-        function printItemQR(id) {
-            const it = items.find(i => i.id === id), qrUrl = window.location.origin + window.location.pathname + "?id=" + id;
-            const win = window.open('', '_blank');
-            win.document.write(`<html><body style="text-align:center; padding:30px;"><h2 style="font-family:serif;">${it.name}</h2><div id="q" style="display:inline-block; padding:10px; border:1px solid #000;"></div><p style="font-family:serif; font-weight:bold;">${it.id}</p><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById('q'), {text:"${qrUrl}", width:150, height:150, correctLevel: QRCode.CorrectLevel.H}); setTimeout(()=>window.print(), 700);<\/script></body></html>`);
-            win.document.close();
-        }
-
         function updateStats() {
             const today = new Date().toLocaleDateString('ru-RU');
             document.getElementById('totalItems').innerText = items.length;
             document.getElementById('okItems').innerText = items.filter(i => i.status === 'ok').length;
             document.getElementById('repairItems').innerText = items.filter(i => i.status === 'repair').length;
             document.getElementById('checkToday').innerText = items.filter(i => i.lastCheck === today).length;
+            
+            // Локации
+            document.getElementById('locHall').innerText = items.filter(i => i.loc === 'Зал').length;
+            document.getElementById('locKitchen').innerText = items.filter(i => i.loc === 'Кухня').length;
+            document.getElementById('locBar').innerText = items.filter(i => i.loc === 'Бар').length;
+            document.getElementById('locWh').innerText = items.filter(i => i.loc === 'Склад').length;
+        }
+
+        function printItemQR(id) {
+            const it = items.find(i => i.id === id), qrUrl = window.location.origin + window.location.pathname + "?id=" + id;
+            const win = window.open('', '_blank');
+            win.document.write(`<html><body style="text-align:center; padding:30px;"><h2 style="font-family:serif;">${it.name}</h2><div id="q" style="display:inline-block;"></div><p>${it.id}</p><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById('q'), {text:"${qrUrl}", width:150, height:150}); setTimeout(()=>window.print(), 600);<\/script></body></html>`);
+            win.document.close();
         }
 
         function exportToExcel() {
-            const data = items.map(i => ({ID: i.id, Имя: i.name, Локация: i.loc, Категория: i.sub, Статус: i.status, Проверка: i.lastCheck}));
+            const data = items.map(i => ({ID: i.id, Имя: i.name, Локация: i.loc, Подгруппа: i.sub, Статус: i.status, Проверка: i.lastCheck}));
             const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Inventory"); XLSX.writeFile(wb, "OKO_Report.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "Inventory"); XLSX.writeFile(wb, "OKO_Inventory.xlsx");
         }
     </script>
 </body>

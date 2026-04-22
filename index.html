@@ -34,20 +34,17 @@
         header h1 { font-size: 1.4rem; font-weight: bold; color: var(--oko-green); text-transform: uppercase; }
         .logout-btn { padding: 5px 10px; font-size: 0.8rem; background: var(--oko-brown); color: white; border: none; cursor: pointer; }
 
-        /* СЕТКА СТАТИСТИКИ */
         .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 8px; }
         .stat-card { background: var(--oko-beige); padding: 10px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
         .stat-number { font-size: 1.1rem; font-weight: bold; color: var(--oko-green); }
 
-        /* Кликабельная статистика локаций */
-        .loc-stats .stat-card { cursor: pointer; background: #E5E0CD; transition: transform 0.1s, background 0.2s; }
-        .loc-stats .stat-card:active { transform: scale(0.95); background: var(--oko-beige); }
+        .loc-stats .stat-card { cursor: pointer; background: #E5E0CD; transition: transform 0.1s; }
+        .loc-stats .stat-card:active { transform: scale(0.95); }
 
         .search-box { width: 100%; padding: 12px; border: 1px solid var(--oko-beige); margin-bottom: 15px; outline: none; font-size: 1rem; background: white; border-radius: 4px; }
 
         .item-card { background: white; border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--oko-beige); cursor: pointer; position: relative; }
-        .status-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; z-index: 5; }
-        .status-repair { background: #ffebee; color: #c62828; border: 1px solid #c62828; }
+        .status-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; z-index: 5; background: #ffebee; color: #c62828; border: 1px solid #c62828; }
 
         .item-image { width: 100%; height: 180px; object-fit: cover; background: #eee; }
         .item-content { padding: 12px; }
@@ -62,7 +59,7 @@
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; }
         .modal.active { display: block; }
-        #transferModal { z-index: 3000; } /* Всегда поверх других модалок */
+        #transferModal { z-index: 3000; }
         
         .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); z-index: 10; }
@@ -105,7 +102,7 @@
                 <div class="stat-card"><div class="stat-number" id="checkToday">0</div><div style="font-size:0.6rem">СЕГОДНЯ</div></div>
             </div>
 
-            <!-- Статистика по локациям (кликая, фильтруем список) -->
+            <!-- Локации (кликая, фильтруем список) -->
             <div class="stats-bar loc-stats">
                 <div class="stat-card" onclick="filterByLoc('Зал')"><div class="stat-number" id="locHall">0</div><div style="font-size:0.6rem">ЗАЛ</div></div>
                 <div class="stat-card" onclick="filterByLoc('Кухня')"><div class="stat-number" id="locKitchen">0</div><div style="font-size:0.6rem">КУХНЯ</div></div>
@@ -125,7 +122,7 @@
         </div>
     </div>
 
-    <!-- Модалки -->
+    <!-- Модалка добавления -->
     <div id="addModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
         <h2>НОВЫЙ ОБЪЕКТ</h2><br>
@@ -133,35 +130,36 @@
         <input type="text" id="addName" class="search-box" placeholder="Название">
         <label>Локация:</label>
         <select id="addLoc" class="search-box">
-            <option value="Офис">Офис</option>
             <option value="Зал">Зал</option>
             <option value="Кухня">Кухня</option>
             <option value="Бар">Бар</option>
             <option value="Склад">Склад</option>
+            <option value="Офис">Офис</option>
         </select>
         <label>Подгруппа:</label>
         <select id="addSubCatSelect" class="search-box" onchange="checkNewSub('add')"></select>
-        <input type="text" id="addCustomSub" class="search-box edit-input" placeholder="Название подгруппы">
+        <input type="text" id="addCustomSub" class="search-box edit-input" placeholder="Название новой подгруппы">
         <input type="file" id="addPhoto" class="search-box" accept="image/*">
         <button class="btn btn-primary" onclick="saveNewItem()">Сохранить</button>
     </div></div>
 
+    <!-- Модалка редактирования/перемещения -->
     <div id="transferModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('transferModal')">&times;</button>
         <h2>ПЕРЕМЕЩЕНИЕ</h2><br>
         <input type="hidden" id="editItemId">
         <label>Новая локация:</label>
         <select id="editLoc" class="search-box">
-            <option value="Офис">Офис</option>
             <option value="Зал">Зал</option>
             <option value="Кухня">Кухня</option>
             <option value="Бар">Бар</option>
             <option value="Склад">Склад</option>
+            <option value="Офис">Офис</option>
         </select>
         <label>Подгруппа:</label>
         <select id="editSubCatSelect" class="search-box" onchange="checkNewSub('edit')"></select>
-        <input type="text" id="editCustomSub" class="search-box edit-input" placeholder="Название подгруппы">
-        <button class="btn btn-primary" onclick="saveTransfer()">Сохранить изменения</button>
+        <input type="text" id="editCustomSub" class="search-box edit-input" placeholder="Название новой подгруппы">
+        <button class="btn btn-primary" onclick="saveTransfer()">Применить изменения</button>
     </div></div>
 
     <div id="itemModal" class="modal"><div class="modal-content" id="itemModalContent"></div></div>
@@ -191,7 +189,7 @@
         function checkAccess() {
             if (document.getElementById('user-login').value === OWNER_LOGIN && document.getElementById('user-pass').value === OWNER_PASS) {
                 localStorage.setItem('oko_auth', 'true'); showApp();
-            } else alert("Ошибка доступа");
+            } else alert("Неверный логин или пароль");
         }
         function logout() { localStorage.removeItem('oko_auth'); location.reload(); }
         if (localStorage.getItem('oko_auth') === 'true') showApp();
@@ -220,8 +218,7 @@
                 select.innerHTML = '<option value="">-- Без подгруппы --</option>';
                 customSubCategories.forEach(cat => {
                     const opt = document.createElement('option');
-                    opt.value = cat; opt.innerText = cat;
-                    select.appendChild(opt);
+                    opt.value = cat; opt.innerText = cat; select.appendChild(opt);
                 });
                 const newOpt = document.createElement('option');
                 newOpt.value = "CREATE_NEW"; newOpt.innerText = "+ СОЗДАТЬ НОВУЮ";
@@ -237,54 +234,63 @@
 
         function filterByLoc(locName) {
             const input = document.getElementById('searchInput');
-            if (input.value === locName) { input.value = ''; } 
-            else { input.value = locName; }
+            input.value = (input.value === locName) ? '' : locName;
             renderItems();
         }
 
-        function openAddModal() { 
-            document.getElementById('addId').value = 'OKO-'+Math.floor(1000+Math.random()*9000); 
-            document.getElementById('addModal').classList.add('active'); 
-        }
-
         async function saveNewItem() {
-            const id = document.getElementById('addId').value, name = document.getElementById('addName').value.trim(), loc = document.getElementById('addLoc').value;
+            const id = document.getElementById('addId').value;
+            const name = document.getElementById('addName').value.trim();
+            const loc = document.getElementById('addLoc').value;
             let sub = document.getElementById('addSubCatSelect').value;
             const customSub = document.getElementById('addCustomSub').value.trim();
             const file = document.getElementById('addPhoto').files[0];
 
-            if (!name) return alert("Введите имя!");
+            if (!name) return alert("Введите название!");
             if (sub === "CREATE_NEW") {
                 if (!customSub) return alert("Введите название подгруппы!");
-                sub = customSub; db.ref('settings/subCategories').push(sub);
+                sub = customSub;
+                try { await db.ref('settings/subCategories').push(sub); } catch(e) {}
             }
 
             document.getElementById('loader').style.display = 'flex';
             let url = "";
-            if (file) { try { const snap = await storage.ref(`photos/${id}`).put(file); url = await snap.ref.getDownloadURL(); } catch (e) {} }
-            
-            db.ref('inventory/' + id).set({ 
-                id, name, loc, sub: sub || "Прочее", photo: url, status: 'ok', 
-                addedDate: new Date().toLocaleDateString('ru-RU'), lastCheck: 'Нет' 
-            })
-            .then(() => { document.getElementById('loader').style.display = 'none'; closeModal('addModal'); });
+
+            try {
+                if (file) {
+                    const snap = await storage.ref(`photos/${id}`).put(file);
+                    url = await snap.ref.getDownloadURL();
+                }
+                await db.ref('inventory/' + id).set({ 
+                    id, name, loc, sub: sub || "Прочее", photo: url, status: 'ok', 
+                    addedDate: new Date().toLocaleDateString('ru-RU'), lastCheck: 'Нет' 
+                });
+                document.getElementById('loader').style.display = 'none';
+                closeModal('addModal');
+                document.getElementById('addName').value = "";
+                document.getElementById('addPhoto').value = "";
+            } catch (err) {
+                document.getElementById('loader').style.display = 'none';
+                alert("Ошибка сохранения: " + err.message + "\nПроверьте правила доступа в Firebase!");
+            }
         }
 
         function renderItems() {
             const container = document.getElementById('itemsContainer'), search = document.getElementById('searchInput').value.toLowerCase();
             container.innerHTML = '';
-            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search) || i.loc.toLowerCase().includes(search)).forEach(item => {
+            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search) || i.loc.toLowerCase().includes(search) || (i.sub && i.sub.toLowerCase().includes(search))).forEach(item => {
                 const div = document.createElement('div'); div.className = 'item-card';
                 div.onclick = () => showItemDetails(item.id);
-                const subText = (item.sub && item.sub !== "undefined" && item.sub !== "Прочее") ? `(${item.sub})` : "";
-                const statusLabel = item.status === 'repair' ? '<div class="status-badge status-repair">РЕМОНТ</div>' : '';
+                
+                const subPart = (item.sub && item.sub !== "undefined" && item.sub !== "Прочее") ? ` | 📂 ${item.sub}` : "";
+                const statusLabel = item.status === 'repair' ? '<div class="status-badge">РЕМОНТ</div>' : '';
 
                 div.innerHTML = `
                     ${statusLabel}
                     <img src="${item.photo || 'https://via.placeholder.com/400x200?text=OKO'}" class="item-image">
                     <div class="item-content">
                         <div style="font-weight:bold; font-size: 1.1rem;">${item.name}</div>
-                        <div style="font-size:0.8rem; margin: 5px 0;">ID: ${item.id} | 📍 ${item.loc} ${subText}</div>
+                        <div style="font-size:0.8rem; margin: 5px 0; color: #555;">ID: ${item.id} | 📍 ${item.loc}${subPart}</div>
                         <div class="qr-wrapper"><div id="qr-${item.id}" class="qr-box"></div></div>
                     </div>`;
                 container.appendChild(div);
@@ -298,11 +304,11 @@
         function showItemDetails(id) {
             const item = items.find(i => i.id === id); if (!item) return;
             const content = document.getElementById('itemModalContent');
-            const subText = (item.sub && item.sub !== "undefined") ? `(${item.sub})` : "";
+            const subLabel = (item.sub && item.sub !== "undefined") ? `${item.sub}` : "Прочее";
             
             const statusBtn = item.status === 'repair' ? 
                 `<button class="btn btn-success" onclick="upStat('${item.id}', 'ok')">✅ ВЕРНУТЬ В СТРОЙ (ОК)</button>` : 
-                `<button class="btn btn-danger" onclick="upStat('${item.id}', 'repair')">🔧 В РЕМОНТ</button>`;
+                `<button class="btn btn-danger" onclick="upStat('${item.id}', 'repair')">🔧 ОТПРАВИТЬ В РЕМОНТ</button>`;
 
             content.innerHTML = `
                 <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
@@ -313,11 +319,12 @@
                 </div>
                 <div style="padding:15px; border:1px solid #ddd; margin:10px 0; background:#fff; border-radius:4px;">
                     <b>Статус:</b> <span style="color:${item.status==='repair'?'red':'green'}">${item.status==='repair'?'В РЕМОНТЕ':'ИСПРАВЕН'}</span><br>
-                    <b>Локация:</b> ${item.loc} ${subText}<br>
+                    <b>Локация:</b> ${item.loc}<br>
+                    <b>Подгруппа:</b> ${subLabel}<br>
                     <b>Проверка:</b> ${item.lastCheck}
                 </div>
                 <button class="btn btn-primary" onclick="markInv('${item.id}')">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
-                <button class="btn" onclick="openTransfer('${item.id}')">📦 ПЕРЕМЕСТИТЬ / ПОДГРУППА</button>
+                <button class="btn" onclick="openTransfer('${item.id}')">📦 ПЕРЕМЕСТИТЬ / КАТЕГОРИЯ</button>
                 ${statusBtn}
                 <button class="btn" onclick="printItemQR('${item.id}')">Печать QR</button>
                 <button class="btn btn-danger" onclick="delItem('${item.id}')">Удалить</button>`;
@@ -343,7 +350,7 @@
 
             if (sub === "CREATE_NEW") {
                 if (!customSub) return alert("Введите название!");
-                sub = customSub; db.ref('settings/subCategories').push(sub);
+                sub = customSub; try { db.ref('settings/subCategories').push(sub); } catch(e) {}
             }
 
             db.ref('inventory/' + id).update({ loc: loc, sub: sub || "Прочее" });
@@ -376,6 +383,10 @@
             });
         }
         
+        function openAddModal() { 
+            document.getElementById('addId').value = 'OKO-'+Math.floor(1000+Math.random()*9000); 
+            document.getElementById('addModal').classList.add('active'); 
+        }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function closeScanner() { closeModal('scannerModal'); }
 
@@ -386,7 +397,6 @@
             document.getElementById('repairItems').innerText = items.filter(i => i.status === 'repair').length;
             document.getElementById('checkToday').innerText = items.filter(i => i.lastCheck === today).length;
             
-            // Локации
             document.getElementById('locHall').innerText = items.filter(i => i.loc === 'Зал').length;
             document.getElementById('locKitchen').innerText = items.filter(i => i.loc === 'Кухня').length;
             document.getElementById('locBar').innerText = items.filter(i => i.loc === 'Бар').length;

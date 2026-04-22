@@ -47,12 +47,11 @@
         .item-image { width: 100%; height: 180px; object-fit: cover; background: #eee; }
         .item-content { padding: 12px; }
 
-        /* QR BOX FIX FOR SCANNING */
         .qr-wrapper { background: white; padding: 8px; display: inline-block; border: 1px solid #ddd; margin-top: 10px; }
-        .qr-box canvas, .qr-box img { display: block; }
 
         .btn { padding: 12px; border: 1px solid var(--oko-brown); border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 8px; text-transform: uppercase; background: white; }
         .btn-primary { background: var(--oko-green); color: white; border: none; }
+        .btn-danger { color: #cc0000; border-color: #cc0000; }
         
         .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
 
@@ -62,13 +61,15 @@
         .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); z-index: 10; }
 
-        /* DETAIL PHOTO FIX */
         .detail-photo { width: 100%; max-height: 300px; object-fit: contain; background: #000; border-radius: 4px; margin-bottom: 15px; }
 
         .fab { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--oko-green); color: white; border-radius: 50%; border: none; font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; }
         .fab-menu { position: fixed; bottom: 85px; right: 20px; display: none; flex-direction: column; gap: 10px; z-index: 1000; }
         .fab-menu.active { display: flex; }
         .fab-item { background: white; padding: 10px 15px; border-radius: 4px; font-weight: bold; border: 1px solid var(--oko-beige); font-size: 0.8rem; }
+
+        /* Стили для новых полей */
+        .edit-input { display: none; margin-bottom: 10px; border: 2px solid var(--oko-green); }
     </style>
 </head>
 <body>
@@ -107,21 +108,54 @@
         </div>
     </div>
 
+    <!-- Модалка добавления -->
     <div id="addModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
         <h2>НОВЫЙ ОБЪЕКТ</h2><br>
         <input type="text" id="addId" class="search-box" readonly>
         <input type="text" id="addName" class="search-box" placeholder="Название">
-        <select id="addLoc" class="search-box" onchange="updateSubCats()">
-            <option value="Офис">Офис</option><option value="Зал">Зал</option>
-            <option value="Кухня">Кухня</option><option value="Бар">Бар</option>
+        
+        <label>Локация:</label>
+        <select id="addLoc" class="search-box">
+            <option value="Офис">Офис</option>
+            <option value="Зал">Зал</option>
+            <option value="Кухня">Кухня</option>
+            <option value="Бар">Бар</option>
             <option value="Склад">Склад</option>
         </select>
-        <div id="subCatArea" style="display:none;">
-            <select id="addSubCat" class="search-box"></select>
-        </div>
+
+        <label>Подгруппа:</label>
+        <select id="addSubCatSelect" class="search-box" onchange="checkNewSub('add')">
+            <!-- Заполнится динамически из Firebase -->
+        </select>
+        <input type="text" id="addCustomSub" class="search-box edit-input" placeholder="Введите название подгруппы">
+        
         <input type="file" id="addPhoto" class="search-box" accept="image/*">
         <button class="btn btn-primary" onclick="saveNewItem()">Сохранить</button>
+    </div></div>
+
+    <!-- Модалка перемещения / редактирования -->
+    <div id="transferModal" class="modal"><div class="modal-content">
+        <button class="close-btn" onclick="closeModal('transferModal')">&times;</button>
+        <h2>ПЕРЕМЕЩЕНИЕ</h2><br>
+        <input type="hidden" id="editItemId">
+        
+        <label>Новая локация:</label>
+        <select id="editLoc" class="search-box">
+            <option value="Офис">Офис</option>
+            <option value="Зал">Зал</option>
+            <option value="Кухня">Кухня</option>
+            <option value="Бар">Бар</option>
+            <option value="Склад">Склад</option>
+        </select>
+
+        <label>Подгруппа:</label>
+        <select id="editSubCatSelect" class="search-box" onchange="checkNewSub('edit')">
+            <!-- Заполнится динамически -->
+        </select>
+        <input type="text" id="editCustomSub" class="search-box edit-input" placeholder="Введите название подгруппы">
+
+        <button class="btn btn-primary" onclick="saveTransfer()">Подтвердить перемещение</button>
     </div></div>
 
     <div id="itemModal" class="modal"><div class="modal-content" id="itemModalContent"></div></div>
@@ -146,6 +180,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database(), storage = firebase.storage();
         let items = [];
+        let customSubCategories = [];
 
         function checkAccess() {
             if (document.getElementById('user-login').value === OWNER_LOGIN && document.getElementById('user-pass').value === OWNER_PASS) {
@@ -158,35 +193,74 @@
         function showApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
+            
+            // Слушаем предметы
             db.ref('inventory').on('value', snap => {
                 items = snap.val() ? Object.values(snap.val()) : [];
                 renderItems(); updateStats();
                 const urlId = new URLSearchParams(window.location.search).get('id');
                 if (urlId) { window.history.replaceState({}, '', window.location.origin + window.location.pathname); showItemDetails(urlId); }
             });
+
+            // Слушаем список подгрупп
+            db.ref('settings/subCategories').on('value', snap => {
+                customSubCategories = snap.val() ? Object.values(snap.val()) : [];
+                updateSubCategoryDropdowns();
+            });
         }
 
-        function updateSubCats() {
-            const loc = document.getElementById('addLoc').value, area = document.getElementById('subCatArea'), sub = document.getElementById('addSubCat');
-            sub.innerHTML = ''; let opts = [];
-            if (loc === 'Зал') opts = ['Стулья', 'Столы', 'Диваны'];
-            else if (loc === 'Кухня' || loc === 'Бар') opts = ['Холодильники'];
-            if (opts.length) {
-                area.style.display = 'block';
-                opts.forEach(o => { let opt = document.createElement('option'); opt.value = o; opt.innerText = o; sub.appendChild(opt); });
-            } else area.style.display = 'none';
+        function updateSubCategoryDropdowns() {
+            const dropdowns = ['addSubCatSelect', 'editSubCatSelect'];
+            dropdowns.forEach(id => {
+                const select = document.getElementById(id);
+                if(!select) return;
+                select.innerHTML = '<option value="">-- Без подгруппы --</option>';
+                customSubCategories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat; opt.innerText = cat;
+                    select.appendChild(opt);
+                });
+                const newOpt = document.createElement('option');
+                newOpt.value = "CREATE_NEW";
+                newOpt.innerText = "+ СОЗДАТЬ НОВУЮ";
+                newOpt.style.color = "blue";
+                select.appendChild(newOpt);
+            });
         }
 
-        function openAddModal() { document.getElementById('addId').value = 'OKO-'+Math.floor(1000+Math.random()*9000); updateSubCats(); document.getElementById('addModal').classList.add('active'); }
+        function checkNewSub(type) {
+            const select = document.getElementById(type + 'SubCatSelect');
+            const input = document.getElementById(type + 'CustomSub');
+            input.style.display = (select.value === "CREATE_NEW") ? "block" : "none";
+        }
+
+        function openAddModal() { 
+            document.getElementById('addId').value = 'OKO-'+Math.floor(1000+Math.random()*9000); 
+            document.getElementById('addModal').classList.add('active'); 
+        }
 
         async function saveNewItem() {
             const id = document.getElementById('addId').value, name = document.getElementById('addName').value.trim(), loc = document.getElementById('addLoc').value;
-            const sub = document.getElementById('addSubCat').value || 'Прочее', file = document.getElementById('addPhoto').files[0];
-            if (!name) return alert("Имя!");
+            let sub = document.getElementById('addSubCatSelect').value;
+            const customSub = document.getElementById('addCustomSub').value.trim();
+            const file = document.getElementById('addPhoto').files[0];
+
+            if (!name) return alert("Введите имя!");
+            
+            if (sub === "CREATE_NEW") {
+                if (!customSub) return alert("Введите название новой подгруппы!");
+                sub = customSub;
+                db.ref('settings/subCategories').push(sub);
+            }
+
             document.getElementById('loader').style.display = 'flex';
             let url = "";
             if (file) { try { const snap = await storage.ref(`photos/${id}`).put(file); url = await snap.ref.getDownloadURL(); } catch (e) {} }
-            db.ref('inventory/' + id).set({ id, name, loc, sub, photo: url, status: 'ok', addedDate: new Date().toLocaleDateString('ru-RU'), lastCheck: 'Нет' })
+            
+            db.ref('inventory/' + id).set({ 
+                id, name, loc, sub: sub || "Прочее", photo: url, status: 'ok', 
+                addedDate: new Date().toLocaleDateString('ru-RU'), lastCheck: 'Нет' 
+            })
             .then(() => { document.getElementById('loader').style.display = 'none'; closeModal('addModal'); });
         }
 
@@ -196,12 +270,12 @@
             items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search)).forEach(item => {
                 const div = document.createElement('div'); div.className = 'item-card';
                 div.onclick = () => showItemDetails(item.id);
+                const subText = (item.sub && item.sub !== "undefined") ? `(${item.sub})` : "";
                 div.innerHTML = `
                     <img src="${item.photo || 'https://via.placeholder.com/400x200?text=OKO'}" class="item-image">
                     <div class="item-content">
-                        <span class="status-badge status-${item.status}">${item.status.toUpperCase()}</span>
-                        <div style="font-weight:bold;">${item.name}</div>
-                        <div style="font-size:0.8rem;">ID: ${item.id} | 📍 ${item.loc}</div>
+                        <div style="font-weight:bold; font-size: 1.1rem;">${item.name}</div>
+                        <div style="font-size:0.8rem; margin: 5px 0;">ID: ${item.id} | 📍 ${item.loc} ${subText}</div>
                         <div class="qr-wrapper"><div id="qr-${item.id}" class="qr-box"></div></div>
                     </div>`;
                 container.appendChild(div);
@@ -213,19 +287,65 @@
         function showItemDetails(id) {
             const item = items.find(i => i.id === id); if (!item) return;
             const content = document.getElementById('itemModalContent');
+            const subText = (item.sub && item.sub !== "undefined") ? `(${item.sub})` : "";
             content.innerHTML = `
                 <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
                 <img src="${item.photo || ''}" class="detail-photo">
-                <h2 style="color:var(--oko-green)">${item.name}</h2>
-                <div style="padding:10px; border:1px solid #ddd; margin:10px 0; background:#fff;">
-                    <b>ID:</b> ${item.id}<br><b>Локация:</b> ${item.loc} (${item.sub})<br>
-                    <b>Добавлен:</b> ${item.addedDate}<br><b>Проверка:</b> ${item.lastCheck}
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="color:var(--oko-green)">${item.name}</h2>
+                    <button onclick="editName('${item.id}', '${item.name}')" style="background:none; border:none; font-size:1.2rem;">✏️</button>
+                </div>
+                <div style="padding:15px; border:1px solid #ddd; margin:10px 0; background:#fff; border-radius:4px;">
+                    <b>ID:</b> ${item.id}<br>
+                    <b>Локация:</b> ${item.loc} ${subText}<br>
+                    <b>Добавлен:</b> ${item.addedDate}<br>
+                    <b>Проверка:</b> ${item.lastCheck}
                 </div>
                 <button class="btn btn-primary" onclick="markInv('${item.id}')">Инвентаризация проведена</button>
+                <button class="btn" onclick="openTransfer('${item.id}')">Переместить / Подгруппа</button>
                 <button class="btn" onclick="upStat('${item.id}', 'repair')">В ремонт</button>
                 <button class="btn" onclick="printItemQR('${item.id}')">Печать QR</button>
                 <button class="btn btn-danger" onclick="delItem('${item.id}')">Удалить</button>`;
             document.getElementById('itemModal').classList.add('active');
+        }
+
+        // Редактирование имени
+        function editName(id, oldName) {
+            const newName = prompt("Введите новое название предмета:", oldName);
+            if (newName && newName.trim() !== "") {
+                db.ref('inventory/' + id).update({ name: newName.trim() });
+                closeModal('itemModal');
+            }
+        }
+
+        // Перемещение
+        function openTransfer(id) {
+            const item = items.find(i => i.id === id);
+            document.getElementById('editItemId').value = id;
+            document.getElementById('editLoc').value = item.loc;
+            document.getElementById('transferModal').classList.add('active');
+        }
+
+        function saveTransfer() {
+            const id = document.getElementById('editItemId').value;
+            const loc = document.getElementById('editLoc').value;
+            let sub = document.getElementById('editSubCatSelect').value;
+            const customSub = document.getElementById('editCustomSub').value.trim();
+
+            if (sub === "CREATE_NEW") {
+                if (!customSub) return alert("Введите название!");
+                sub = customSub;
+                db.ref('settings/subCategories').push(sub);
+            }
+
+            db.ref('inventory/' + id).update({ 
+                loc: loc, 
+                sub: sub || "Прочее",
+                lastCheck: new Date().toLocaleDateString('ru-RU') // Обновляем дату при перемещении
+            });
+            
+            closeModal('transferModal');
+            closeModal('itemModal');
         }
 
         function markInv(id) { db.ref('inventory/'+id).update({lastCheck: new Date().toLocaleDateString('ru-RU')}); closeModal('itemModal'); }

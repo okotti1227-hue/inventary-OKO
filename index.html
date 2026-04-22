@@ -32,17 +32,22 @@
         .sync-online { background-color: #d4edda; color: #155724; }
         .sync-offline { background-color: #f8d7da; color: #721c24; }
 
-        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
-        .stat-card { background: var(--oko-beige); padding: 8px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
-        .stat-number { font-size: 1.1rem; font-weight: bold; color: var(--oko-green); }
-        .stat-label { font-size: 0.65rem; text-transform: uppercase; }
+        .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+        .stat-card { background: var(--oko-beige); padding: 10px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; }
+        .stat-card:active { opacity: 0.6; transform: scale(0.98); }
+        .stat-number { font-size: 1.2rem; font-weight: bold; color: var(--oko-green); }
+        .stat-label { font-size: 0.7rem; text-transform: uppercase; font-weight: bold; }
 
-        .loc-stats .stat-card { cursor: pointer; background: #E5E0CD; }
+        .loc-stats .stat-card { background: #E5E0CD; }
 
         .search-box { width: 100%; padding: 12px; border: 1px solid var(--oko-beige); margin-bottom: 15px; outline: none; font-size: 1rem; background: white; }
 
         .item-card { background: white; border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--oko-beige); cursor: pointer; position: relative; }
-        .item-image { width: 100%; height: 180px; object-fit: cover; background: #eee; }
+        
+        /* ИСПРАВЛЕННОЕ ОКНО ФОТОГРАФИИ */
+        .item-image-container { width: 100%; height: 250px; background: #222; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .item-image { width: 100%; height: 100%; object-fit: contain; } /* contain показывает фото целиком */
+        
         .item-content { padding: 12px; }
         .status-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; z-index: 5; background: #ffebee; color: #c62828; border: 1px solid #c62828; }
 
@@ -51,17 +56,15 @@
         .btn { padding: 12px; border: 1px solid var(--oko-brown); border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 8px; text-transform: uppercase; background: white; font-size: 0.9rem; }
         .btn-primary { background: var(--oko-green); color: white; border: none; }
         .btn-danger { color: var(--oko-red); border-color: var(--oko-red); }
-        .btn-success { color: #2e7d32; border-color: #2e7d32; }
         
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; }
         .modal.active { display: block; }
-        /* Модалка редактирования поверх основной */
         #editModal { z-index: 3000; } 
         
         .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); z-index: 10; }
 
-        .detail-photo { width: 100%; max-height: 220px; object-fit: contain; background: #000; border-radius: 4px; margin-bottom: 15px; }
+        .detail-photo { width: 100%; max-height: 300px; object-fit: contain; background: #000; border-radius: 4px; margin-bottom: 15px; }
 
         .fab { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--oko-green); color: white; border-radius: 50%; border: none; font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; }
         .fab-menu { position: fixed; bottom: 85px; right: 20px; display: none; flex-direction: column; gap: 10px; z-index: 1000; }
@@ -84,10 +87,18 @@
         </header>
 
         <div class="stats-bar">
-            <div class="stat-card"><div class="stat-number" id="totalItems">0</div><div class="stat-label">ВСЕГО</div></div>
-            <div class="stat-card"><div class="stat-number" id="okItems">0</div><div class="stat-label">ОК</div></div>
-            <div class="stat-card"><div class="stat-number" id="repairItems">0</div><div class="stat-label">РЕМОНТ</div></div>
-            <div class="stat-card"><div class="stat-number" id="checkToday">0</div><div class="stat-label">СЕГОДНЯ</div></div>
+            <div class="stat-card" onclick="setStatFilter('all')">
+                <div class="stat-number" id="totalItems">0</div>
+                <div class="stat-label">ВСЕГО</div>
+            </div>
+            <div class="stat-card" onclick="setStatFilter('ok')">
+                <div class="stat-number" id="okItems">0</div>
+                <div class="stat-label">ОК</div>
+            </div>
+            <div class="stat-card" onclick="setStatFilter('repair')">
+                <div class="stat-number" id="repairItems">0</div>
+                <div class="stat-label">РЕМОНТ</div>
+            </div>
         </div>
 
         <div class="stats-bar loc-stats">
@@ -130,15 +141,13 @@
         <button class="btn btn-primary" onclick="saveNewItem()">Сохранить в облако</button>
     </div></div>
 
-    <!-- Модалка редактирования / перемещения -->
+    <!-- Модалка редактирования -->
     <div id="editModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('editModal')">&times;</button>
         <h2 style="color:var(--oko-green)">ИЗМЕНИТЬ ДАННЫЕ</h2><br>
         <input type="hidden" id="editItemTargetId">
-        
         <label>Название объекта:</label>
         <input type="text" id="editItemName" class="search-box">
-
         <label>Новая локация:</label>
         <select id="editItemLocation" class="search-box">
             <option value="Зал">Зал</option>
@@ -147,23 +156,16 @@
             <option value="Склад">Склад</option>
             <option value="Офис">Офис</option>
         </select>
-
         <label>Подгруппа:</label>
         <select id="editSubCatSelect" class="search-box" onchange="checkNewSub('edit')"></select>
         <input type="text" id="editCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Назовите новую группу">
-
-        <label>Заменить фотографию (файл):</label>
+        <label>Заменить фотографию:</label>
         <input type="file" id="editItemPhoto" class="search-box" accept="image/*">
-
         <button class="btn btn-primary" onclick="saveEditChanges()">Применить изменения</button>
     </div></div>
 
     <div id="itemModal" class="modal"><div class="modal-content" id="itemModalContent"></div></div>
-
-    <div id="scannerModal" class="modal"><div class="modal-content">
-        <button class="close-btn" onclick="closeScanner()">&times;</button>
-        <div id="reader"></div>
-    </div></div>
+    <div id="scannerModal" class="modal"><div class="modal-content"><button class="close-btn" onclick="closeScanner()">&times;</button><div id="reader"></div></div></div>
 
     <script>
         const firebaseConfig = {
@@ -179,6 +181,8 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let items = [], subCategories = [], html5QrCode = null;
+        let globalStatusFilter = 'all'; 
+
         const DEFAULT_PHOTO = 'https://via.placeholder.com/400x200?text=OKO';
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -211,9 +215,15 @@
             document.getElementById(type === 'add' ? 'addCustomSub' : 'editCustomSub').style.display = (val === 'NEW') ? 'block' : 'none';
         }
 
+        function setStatFilter(status) {
+            globalStatusFilter = status;
+            renderItems();
+        }
+
         function filterByLoc(loc) {
             const inp = document.getElementById('searchInput');
-            inp.value = (inp.value === loc) ? '' : loc; renderItems();
+            inp.value = (inp.value === loc) ? '' : loc; 
+            renderItems();
         }
 
         function openAddModal() {
@@ -247,12 +257,28 @@
         function renderItems() {
             const container = document.getElementById('itemsContainer'), search = document.getElementById('searchInput').value.toLowerCase();
             container.innerHTML = '';
-            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search) || i.location.toLowerCase().includes(search) || (i.sub && i.sub.toLowerCase().includes(search))).forEach(item => {
+            
+            items.filter(i => {
+                const matchesSearch = i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search) || i.location.toLowerCase().includes(search) || (i.sub && i.sub.toLowerCase().includes(search));
+                const matchesStatus = globalStatusFilter === 'all' ? true : i.status === globalStatusFilter;
+                return matchesSearch && matchesStatus;
+            }).forEach(item => {
                 const div = document.createElement('div'); div.className = 'item-card';
                 div.onclick = () => showItemDetail(item.id);
                 const subPart = (item.sub && item.sub !== "Прочее") ? ` | 📂 ${item.sub}` : "";
-                const status = item.status === 'repair' ? '<div class="status-badge">РЕМОНТ</div>' : '';
-                div.innerHTML = `${status}<img src="${item.photo || DEFAULT_PHOTO}" class="item-image"><div class="item-content"><strong style="font-size:1.1rem;">${item.name}</strong><br><span style="font-size:0.85rem; color:#666;">ID: ${item.id} | 📍 ${item.location}${subPart}</span><br><div class="qr-wrapper"><div id="qr-${item.id}"></div></div></div>`;
+                const statusLabel = item.status === 'repair' ? '<div class="status-badge">РЕМОНТ</div>' : '';
+                
+                div.innerHTML = `
+                    ${statusLabel}
+                    <div class="item-image-container">
+                        <img src="${item.photo || DEFAULT_PHOTO}" class="item-image">
+                    </div>
+                    <div class="item-content">
+                        <strong style="font-size:1.1rem;">${item.name}</strong><br>
+                        <span style="font-size:0.85rem; color:#666;">ID: ${item.id} | 📍 ${item.location}${subPart}</span><br>
+                        <span style="font-size:0.8rem; color:#888;">Добавлен: ${item.addedDate || 'Неизвестно'}</span><br>
+                        <div class="qr-wrapper"><div id="qr-${item.id}"></div></div>
+                    </div>`;
                 container.appendChild(div);
                 new QRCode(document.getElementById(`qr-${item.id}`), { text: window.location.origin + window.location.pathname + "?id=" + item.id, width: 70, height: 70 });
             });
@@ -263,13 +289,16 @@
             const statusBtn = item.status === 'repair' ? `<button class="btn btn-success" onclick="upStat('${item.id}', 'ok')">✅ ВЕРНУТЬ В СТРОЙ</button>` : `<button class="btn btn-danger" onclick="upStat('${item.id}', 'repair')">🔧 В РЕМОНТ</button>`;
             document.getElementById('itemModalContent').innerHTML = `
                 <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
-                <img src="${item.photo}" class="detail-photo">
+                <div style="background:#222; border-radius:4px; overflow:hidden; margin-bottom:15px; display:flex; justify-content:center;">
+                    <img src="${item.photo}" class="detail-photo" style="margin-bottom:0;">
+                </div>
                 <h2 style="color:var(--oko-green)">${item.name}</h2>
                 <div style="background:white; padding:15px; border-radius:4px; margin:10px 0; border:1px solid #ddd;">
                     <p><strong>ID:</strong> ${item.id}</p>
                     <p><strong>Локация:</strong> ${item.location}</p>
                     <p><strong>Группа:</strong> ${item.sub}</p>
-                    <p><strong>Проверка:</strong> ${item.lastCheck}</p>
+                    <p><strong>Добавлен:</strong> ${item.addedDate || '---'}</p>
+                    <p><strong>Последняя проверка:</strong> ${item.lastCheck}</p>
                     <p><strong>Статус:</strong> ${item.status === 'repair' ? 'РЕМОНТ' : 'ОК'}</p>
                 </div>
                 <button class="btn btn-primary" onclick="markCheck('${item.id}')">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
@@ -280,7 +309,6 @@
             document.getElementById('itemModal').classList.add('active');
         }
 
-        // ОТКРЫТИЕ ОКНА РЕДАКТИРОВАНИЯ
         function openEditModal(id) {
             const item = items.find(i => i.id === id);
             document.getElementById('editItemTargetId').value = id;
@@ -290,7 +318,6 @@
             document.getElementById('editModal').classList.add('active');
         }
 
-        // СОХРАНЕНИЕ ИЗМЕНЕНИЙ (Перемещение, Группа, Имя, Файл)
         async function saveEditChanges() {
             const id = document.getElementById('editItemTargetId').value;
             const newName = document.getElementById('editItemName').value.trim();
@@ -305,17 +332,13 @@
             document.getElementById('loader').style.display = 'flex';
             try {
                 let updateData = { name: newName, location: newLoc, sub: newSub || "Прочее" };
-                
-                // Если выбран новый файл, конвертируем и добавляем в обновление
                 if (newFile) {
                     const photoBase64 = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(newFile); });
                     updateData.photo = photoBase64;
                 }
-
                 await db.ref('inventory/' + id).update(updateData);
-                document.getElementById('loader').style.display = 'none';
-                closeModal('editModal');
-                setTimeout(() => showItemDetail(id), 300); // Обновляем карточку деталей
+                document.getElementById('loader').style.display = 'none'; closeModal('editModal');
+                setTimeout(() => showItemDetail(id), 300);
             } catch (e) { document.getElementById('loader').style.display = 'none'; alert(e.message); }
         }
 
@@ -324,11 +347,10 @@
         async function deleteItem(id) { if (confirm("Удалить?")) { await db.ref('inventory/' + id).remove(); closeModal('itemModal'); } }
 
         function updateStats() {
-            const today = new Date().toLocaleDateString('ru-RU');
             document.getElementById('totalItems').innerText = items.length;
             document.getElementById('okItems').innerText = items.filter(i => i.status === 'ok').length;
             document.getElementById('repairItems').innerText = items.filter(i => i.status === 'repair').length;
-            document.getElementById('checkToday').innerText = items.filter(i => i.lastCheck === today).length;
+
             document.getElementById('locHall').innerText = items.filter(i => i.location === 'Зал').length;
             document.getElementById('locKitchen').innerText = items.filter(i => i.location === 'Кухня').length;
             document.getElementById('locBar').innerText = items.filter(i => i.location === 'Бар').length;
@@ -353,7 +375,7 @@
         }
 
         function exportToExcel() {
-            const data = items.map(i => ({ ID: i.id, Имя: i.name, Локация: i.location, Группа: i.sub, Статус: i.status }));
+            const data = items.map(i => ({ ID: i.id, Имя: i.name, Локация: i.location, Группа: i.sub, Статус: i.status, Добавлен: i.addedDate }));
             const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Inventory"); XLSX.writeFile(wb, "OKO_Cloud.xlsx");
         }

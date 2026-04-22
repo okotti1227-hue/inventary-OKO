@@ -31,14 +31,19 @@
         #main-app { display: none; padding-bottom: 80px; }
         .container { max-width: 700px; margin: 0 auto; padding: 10px; }
         
-        /* ШАПКА */
+        /* ШАПКА БЕЗ ЛОГО */
         header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--oko-beige); margin-bottom: 15px; }
-        .header-logo { height: 50px; width: auto; object-fit: contain; }
+        .header-title { font-size: 1.4rem; font-weight: bold; color: var(--oko-green); text-transform: uppercase; }
         .logout-btn { background: none; border: 1px solid var(--oko-brown); padding: 5px 10px; cursor: pointer; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; border-radius: 4px; color: var(--oko-brown); }
+
+        .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: bold; padding: 4px 10px; border-radius: 20px; }
+        .sync-online { background-color: #d4edda; color: #155724; }
+        .sync-offline { background-color: #f8d7da; color: #721c24; }
 
         /* СТАТИСТИКА */
         .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
-        .stat-card { background: var(--oko-beige); padding: 10px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(0,0,0,0.05); cursor: pointer; }
+        .stat-card { background: var(--oko-beige); padding: 10px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; }
+        .stat-card:active { opacity: 0.6; }
         .stat-number { font-size: 1.2rem; font-weight: bold; color: var(--oko-green); }
         .stat-label { font-size: 0.7rem; text-transform: uppercase; font-weight: bold; }
         .loc-stats .stat-card { background: #E5E0CD; }
@@ -63,10 +68,11 @@
         .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); z-index: 10; }
 
-        /* ИСПРАВЛЕННОЕ ФОТО В КАРТОЧКЕ (МЕНЬШЕ) */
+        /* КОМПАКТНОЕ ФОТО В ДЕТАЛЯХ */
         .detail-photo-box { background: #222; border-radius: 4px; display: flex; justify-content: center; height: 220px; overflow: hidden; margin-bottom: 15px; }
         .detail-photo { height: 100%; object-fit: contain; }
 
+        /* FAB MENU */
         .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--oko-green); color: white; border-radius: 50%; border: none; font-size: 2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; cursor: pointer; }
         .fab-menu { position: fixed; bottom: 90px; right: 20px; display: none; flex-direction: column; gap: 12px; z-index: 1000; }
         .fab-menu.active { display: flex; }
@@ -82,19 +88,22 @@
     <!-- ЭКРАН ВХОДА -->
     <div id="login-screen">
         <div class="login-card">
-            <img src="logo.png" alt="OKO" style="width: 120px; margin-bottom: 20px;" onerror="this.src='https://via.placeholder.com/120x80?text=OKO'">
-            <h2 style="color: var(--oko-green); margin-bottom: 20px;">ИНВЕНТАРЬ</h2>
+            <h1 style="color: var(--oko-green); margin-bottom: 10px; font-size: 1.8rem;">Инвентарь ОКО</h1>
+            <p style="font-size: 0.8rem; margin-bottom: 25px; color: #666;">Система контроля имущества</p>
             <input type="text" id="user-login" class="search-box" placeholder="Логин">
             <input type="password" id="user-pass" class="search-box" placeholder="Пароль">
             <button class="btn btn-primary" onclick="checkAccess()">Войти</button>
         </div>
     </div>
 
-    <!-- ПРИЛОЖЕНИЕ -->
+    <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
     <div id="main-app">
         <div class="container">
             <header>
-                <img src="logo.png" alt="OKO" class="header-logo" onerror="this.src='https://via.placeholder.com/100x50?text=OKO'">
+                <div class="header-title">Инвентарь ОКО</div>
+                <div id="syncStatus" class="sync-status sync-offline">
+                    <span id="syncIcon">⚠️</span> <span id="syncText">Офлайн</span>
+                </div>
                 <button class="logout-btn" onclick="logout()">Выход</button>
             </header>
 
@@ -118,9 +127,9 @@
         <button class="fab" onclick="document.getElementById('fabMenu').classList.toggle('active')">+</button>
         <div class="fab-menu" id="fabMenu">
             <button class="fab-item" onclick="openAddModal()">Добавить объект</button>
-            <button class="fab-item" onclick="openScanner()">Сканер</button>
-            <button class="fab-item" onclick="printAllQR()" style="background: #eef2ff; color: #3730a3;">Печать всех QR</button>
-            <button class="fab-item" onclick="exportToExcel()">Excel</button>
+            <button class="fab-item" onclick="openScanner()">Сканер QR</button>
+            <button class="fab-item" onclick="printAllQR()" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0;">🖨️ Печать всех QR</button>
+            <button class="fab-item" onclick="exportToExcel()">Выгрузить Excel</button>
         </div>
     </div>
 
@@ -129,17 +138,17 @@
         <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
         <h2 style="color:var(--oko-green)">НОВЫЙ ОБЪЕКТ</h2><br>
         <input type="text" id="addId" class="search-box" readonly>
-        <input type="text" id="itemName" class="search-box" placeholder="Название">
+        <input type="text" id="itemName" class="search-box" placeholder="Название предмета">
         <label>Локация:</label>
         <select id="itemLocation" class="search-box">
             <option value="Зал">Зал</option><option value="Кухня">Кухня</option><option value="Бар">Бар</option><option value="Склад">Склад</option><option value="Офис">Офис</option>
         </select>
         <label>Подгруппа:</label>
         <select id="addSubCatSelect" class="search-box" onchange="checkNewSub('add')"></select>
-        <input type="text" id="addCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Новая подгруппа">
+        <input type="text" id="addCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Название новой подгруппы">
         <label>Фотография:</label>
         <input type="file" id="itemPhoto" class="search-box" accept="image/*">
-        <button class="btn btn-primary" onclick="saveNewItem()">Сохранить</button>
+        <button class="btn btn-primary" onclick="saveNewItem()">Добавить в базу</button>
     </div></div>
 
     <div id="editModal" class="modal"><div class="modal-content">
@@ -153,8 +162,8 @@
         </select>
         <label>Подгруппа:</label><select id="editSubCatSelect" class="search-box" onchange="checkNewSub('edit')"></select>
         <input type="text" id="editCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Новая группа">
-        <label>Заменить фото:</label><input type="file" id="editItemPhoto" class="search-box" accept="image/*">
-        <button class="btn btn-primary" onclick="saveEditChanges()">Применить</button>
+        <label>Сменить фото:</label><input type="file" id="editItemPhoto" class="search-box" accept="image/*">
+        <button class="btn btn-primary" onclick="saveEditChanges()">Сохранить изменения</button>
     </div></div>
 
     <div id="itemModal" class="modal"><div class="modal-content" id="itemModalContent"></div></div>
@@ -202,9 +211,13 @@
                 subCategories = snap.val() ? Object.values(snap.val()) : [];
                 updateDropdowns();
             });
+            db.ref('.info/connected').on('value', snap => {
+                const s = document.getElementById('syncStatus'), i = document.getElementById('syncIcon'), t = document.getElementById('syncText');
+                if (snap.val()) { s.className = 'sync-status sync-online'; i.innerText = '🟢'; t.innerText = 'Онлайн'; }
+                else { s.className = 'sync-status sync-offline'; i.innerText = '⚠️'; t.innerText = 'Офлайн'; }
+            });
         }
 
-        // ПРОВЕРКА НА ДУБЛИКАТ ИМЕНИ
         function isNameTaken(name, currentId = null) {
             return items.some(it => it.name.trim().toLowerCase() === name.trim().toLowerCase() && it.id !== currentId);
         }
@@ -219,9 +232,9 @@
             const currentUser = localStorage.getItem('oko_user') || "Неизвестен";
 
             if (!name) return alert("Введите название!");
-            if (isNameTaken(name)) return alert("Объект с таким названием уже существует!");
+            if (isNameTaken(name)) return alert("Предмет с таким названием уже есть в базе!");
             
-            if (sub === 'NEW') { if (!custom) return alert("Имя группы!"); sub = custom; db.ref('settings/subCategories').push(sub); }
+            if (sub === 'NEW') { if (!custom) return alert("Введите имя группы!"); sub = custom; db.ref('settings/subCategories').push(sub); }
             
             document.getElementById('loader').style.display = 'flex';
             try {
@@ -233,6 +246,7 @@
                     createdBy: currentUser, updatedBy: currentUser
                 });
                 document.getElementById('loader').style.display = 'none'; closeModal('addModal');
+                document.getElementById('itemName').value = ""; document.getElementById('itemPhoto').value = "";
             } catch (e) { document.getElementById('loader').style.display = 'none'; alert(e.message); }
         }
 
@@ -246,7 +260,7 @@
             const currentUser = localStorage.getItem('oko_user') || "Неизвестен";
 
             if (!name) return alert("Имя не может быть пустым");
-            if (isNameTaken(name, id)) return alert("Объект с таким названием уже существует!");
+            if (isNameTaken(name, id)) return alert("Предмет с таким названием уже существует!");
 
             if (sub === 'NEW') { if (!custom) return alert("Группа!"); sub = custom; db.ref('settings/subCategories').push(sub); }
             
@@ -295,16 +309,16 @@
                 <button class="btn btn-primary" onclick="markCheck('${item.id}')">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
                 <button class="btn" onclick="openEditModal('${item.id}')">📦 ПЕРЕМЕСТИТЬ / ИЗМЕНИТЬ</button>
                 ${statusBtn}<button class="btn" onclick="printQR('${item.id}')">Печать QR</button>
-                <button class="btn btn-danger" onclick="deleteItem('${item.id}')">Удалить</button>`;
+                <button class="btn btn-danger" onclick="deleteItem('${item.id}')">Удалить объект</button>`;
             document.getElementById('itemModal').classList.add('active');
         }
 
-        // ОСТАЛЬНЫЕ ФУНКЦИИ
         function printAllQR() {
             if (items.length === 0) return alert("База пуста!");
             const pWin = window.open('', '_blank');
             pWin.document.write(`<html><head><title>Печать QR</title><style>body { font-family: "Times New Roman", serif; display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; }.qr-card { border: 1px solid #ccc; padding: 10px; margin: 10px; text-align: center; width: 160px; }.qr-name { font-weight: bold; font-size: 12px; height: 32px; overflow: hidden; }.qr-id { font-size: 10px; color: #666; margin-top: 4px; }</style><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script></head><body><div id="grid" style="display: flex; flex-wrap: wrap; justify-content: center;"></div><script>const data = ${JSON.stringify(items)};const grid = document.getElementById('grid');const url = "${window.location.origin + window.location.pathname}";data.forEach(it => {const div = document.createElement('div'); div.className = 'qr-card';div.innerHTML = '<div class="qr-name">' + it.name + '</div><div id="q-' + it.id + '"></div><div class="qr-id">' + it.id + '</div>';grid.appendChild(div);new QRCode(document.getElementById('q-' + it.id), { text: url + "?id=" + it.id, width: 130, height: 130 });});setTimeout(() => { window.print(); window.close(); }, 1200);<\/script></body></html>`);
             pWin.document.close();
+            document.getElementById('fabMenu').classList.remove('active');
         }
         function updateDropdowns() { ['addSubCatSelect', 'editSubCatSelect'].forEach(id => { const sel = document.getElementById(id); if(!sel) return; sel.innerHTML = '<option value="">-- Подгруппа --</option>'; subCategories.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`); sel.innerHTML += '<option value="NEW" style="color:blue;">+ НОВАЯ</option>'; }); }
         function checkNewSub(type) { const val = document.getElementById(type === 'add' ? 'addSubCatSelect' : 'editSubCatSelect').value; document.getElementById(type === 'add' ? 'addCustomSub' : 'editCustomSub').style.display = (val === 'NEW') ? 'block' : 'none'; }
@@ -315,7 +329,7 @@
         function openEditModal(id) { const it = items.find(i => i.id === id); document.getElementById('editItemTargetId').value = id; document.getElementById('editItemName').value = it.name; document.getElementById('editItemLocation').value = it.location; document.getElementById('editSubCatSelect').value = subCategories.includes(it.sub) ? it.sub : ""; document.getElementById('editModal').classList.add('active'); }
         function upStat(id, s) { db.ref('inventory/' + id).update({ status: s }); setTimeout(() => showItemDetail(id), 300); }
         function markCheck(id) { db.ref('inventory/' + id).update({ lastCheck: new Date().toLocaleDateString('ru-RU') }); closeModal('itemModal'); }
-        async function deleteItem(id) { if (confirm("Удалить?")) { await db.ref('inventory/' + id).remove(); closeModal('itemModal'); } }
+        async function deleteItem(id) { if (confirm("Удалить объект?")) { await db.ref('inventory/' + id).remove(); closeModal('itemModal'); } }
         function updateStats() { document.getElementById('totalItems').innerText = items.length; document.getElementById('okItems').innerText = items.filter(i => i.status === 'ok').length; document.getElementById('repairItems').innerText = items.filter(i => i.status === 'repair').length; document.getElementById('locHall').innerText = items.filter(i => i.location === 'Зал').length; document.getElementById('locKitchen').innerText = items.filter(i => i.location === 'Кухня').length; document.getElementById('locBar').innerText = items.filter(i => i.location === 'Бар').length; document.getElementById('locWh').innerText = items.filter(i => i.location === 'Склад').length; }
         function openScanner() { document.getElementById('scannerModal').classList.add('active'); html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, t => { const id = t.includes('?id=') ? t.split('?id=')[1] : t; closeScanner(); showItemDetail(id); }); }
         function closeScanner() { if (html5QrCode) html5QrCode.stop(); closeModal('scannerModal'); }

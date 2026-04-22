@@ -3,314 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Инвентаризация Cloud</title>
+    <title>Инвентарь ОКО Cloud</title>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            min-height: 100vh; color: #333; padding-bottom: 100px;
-        }
-        .container { max-width: 800px; margin: 0 auto; padding: 15px; }
-        header { text-align: center; color: white; margin-bottom: 20px; padding-top: 10px; }
-        header h1 { font-size: 1.8rem; margin-bottom: 5px; }
-        header p { font-size: 0.9rem; opacity: 0.9; }
-
-        .sync-status {
-            position: fixed; top: 10px; right: 10px;
-            padding: 8px 15px; border-radius: 20px;
-            font-size: 0.8rem; font-weight: 600; z-index: 1000;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .sync-online { background: #d4edda; color: #155724; }
-        .sync-offline { background: #f8d7da; color: #721c24; }
-        .sync-syncing { background: #fff3cd; color: #856404; }
-
-        /* СТАТИСТИКА */
-        .stats-bar {
-            display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 10px; margin-bottom: 10px;
-        }
-        .stat-card {
-            background: rgba(255,255,255,0.95); padding: 10px;
-            border-radius: 12px; text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .stat-number { font-size: 1.3rem; font-weight: bold; color: #667eea; }
-        .stat-label { font-size: 0.65rem; color: #666; margin-top: 3px; font-weight: 600; }
-
-        /* Кликабельная статистика локаций */
-        .loc-stats .stat-card { cursor: pointer; transition: transform 0.1s; background: rgba(255,255,255,0.8); }
-        .loc-stats .stat-card:active { transform: scale(0.95); }
-
-        .fab-container { position: fixed; bottom: 20px; right: 20px; z-index: 100; }
-        .fab {
-            width: 60px; height: 60px; border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; border: none; font-size: 1.5rem;
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            display: flex; align-items: center; justify-content: center;
-            transition: transform 0.2s;
-        }
-        .fab:active { transform: scale(0.95); }
-        .fab-menu {
-            position: absolute; bottom: 70px; right: 0;
-            display: none; flex-direction: column; gap: 10px;
-        }
-        .fab-menu.active { display: flex; }
-        .fab-item {
-            background: white; color: #333; border: none;
-            padding: 12px 20px; border-radius: 25px;
-            font-size: 0.9rem; cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            white-space: nowrap; display: flex;
-            align-items: center; gap: 8px;
+        :root {
+            --oko-green: #5C6041;
+            --oko-beige: #D9D1B5;
+            --oko-brown: #3B352A;
+            --oko-white: #F4EEDC;
+            --oko-red: #cc0000;
         }
 
-        .card {
-            background: white; border-radius: 16px;
-            padding: 20px; margin-bottom: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Times New Roman", Times, serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--oko-white); color: var(--oko-brown); min-height: 100vh; padding-bottom: 80px; }
 
-        .form-group { margin-bottom: 15px; }
-        .form-group label {
-            display: block; font-size: 0.85rem;
-            color: #666; margin-bottom: 5px; font-weight: 500;
-        }
-        .form-group input, .form-group select {
-            width: 100%; padding: 12px;
-            border: 2px solid #e0e0e0; border-radius: 10px;
-            font-size: 1rem; font-family: inherit;
-        }
-        .edit-input-sub { display: none; margin-top: 10px; border-color: #667eea; }
-
-        .btn {
-            padding: 12px 20px; border: none; border-radius: 10px;
-            font-size: 1rem; font-weight: 600; cursor: pointer;
-            transition: all 0.2s; width: 100%; margin-bottom: 10px;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .btn-secondary { background: #f0f0f0; color: #333; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-
-        .items-list { display: flex; flex-direction: column; gap: 15px; }
-        .item-card {
-            background: white; border-radius: 16px;
-            overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        .item-image {
-            width: 100%; height: 180px; object-fit: cover; background: #f0f0f0;
-        }
-        .item-content { padding: 15px; }
-        .status-badge {
-            padding: 4px 10px; border-radius: 12px;
-            font-size: 0.75rem; font-weight: 600;
-            text-transform: uppercase; margin-left: 8px;
-        }
-        .status-ok { background: #d4edda; color: #155724; }
-        .status-repair { background: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
-
-        .qr-section {
-            display: flex; align-items: center; gap: 15px;
-            padding-top: 15px; border-top: 1px solid #eee;
-            margin-top: 10px;
-        }
-        .qr-code { width: 70px; height: 70px; flex-shrink: 0; }
+        .container { max-width: 700px; margin: 0 auto; padding: 10px; }
         
-        .modal {
-            display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.9);
-            z-index: 2000; overflow-y: auto;
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--oko-beige); margin-bottom: 15px; }
+        header h1 { font-size: 1.4rem; font-weight: bold; color: var(--oko-green); text-transform: uppercase; }
+
+        /* ИСПРАВЛЕННЫЙ ДИЗАЙН СТАТУСА */
+        .sync-status { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            font-size: 0.85rem; 
+            font-weight: bold; 
+            padding: 6px 14px; 
+            border-radius: 25px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
+        .sync-online { background-color: #d4edda; color: #155724; }
+        .sync-offline { background-color: #f8d7da; color: #721c24; }
+
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
+        .stat-card { background: var(--oko-beige); padding: 8px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
+        .stat-number { font-size: 1.1rem; font-weight: bold; color: var(--oko-green); }
+        .stat-label { font-size: 0.65rem; text-transform: uppercase; }
+
+        .loc-stats .stat-card { cursor: pointer; background: #E5E0CD; transition: 0.2s; }
+        .loc-stats .stat-card:active { opacity: 0.7; }
+
+        .search-box { width: 100%; padding: 12px; border: 1px solid var(--oko-beige); margin-bottom: 15px; outline: none; font-size: 1rem; background: white; }
+
+        .item-card { background: white; border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--oko-beige); cursor: pointer; position: relative; }
+        .item-image { width: 100%; height: 180px; object-fit: cover; background: #eee; }
+        .item-content { padding: 12px; }
+        
+        .status-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; z-index: 5; background: #ffebee; color: #c62828; border: 1px solid #c62828; }
+
+        .qr-wrapper { background: white; padding: 5px; display: inline-block; border: 1px solid #ddd; margin-top: 5px; }
+
+        .btn { padding: 12px; border: 1px solid var(--oko-brown); border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 8px; text-transform: uppercase; background: white; font-size: 0.9rem; }
+        .btn-primary { background: var(--oko-green); color: white; border: none; }
+        .btn-danger { color: var(--oko-red); border-color: var(--oko-red); }
+        .btn-success { color: #2e7d32; border-color: #2e7d32; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; }
         .modal.active { display: block; }
-        #itemModal { z-index: 2500; } /* Детали поверх остальных */
-        
-        .modal-content { background: white; min-height: 100vh; }
-        .modal-header {
-            position: sticky; top: 0; background: white;
-            padding: 15px; border-bottom: 1px solid #eee;
-            display: flex; justify-content: space-between;
-            align-items: center; z-index: 10;
-        }
-        .modal-body { padding: 15px; }
-        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; padding: 5px; }
+        .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); z-index: 10; }
 
-        .search-box {
-            width: 100%; padding: 12px 15px;
-            border: none; border-radius: 25px;
-            background: rgba(255,255,255,0.9);
-            margin-bottom: 15px; font-size: 1rem;
-        }
+        .detail-photo { width: 100%; max-height: 220px; object-fit: contain; background: #000; border-radius: 4px; margin-bottom: 15px; }
 
-        .loader-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.8); z-index: 9999;
-            display: none; align-items: center; justify-content: center;
-        }
+        .fab { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--oko-green); color: white; border-radius: 50%; border: none; font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; }
+        .fab-menu { position: fixed; bottom: 85px; right: 20px; display: none; flex-direction: column; gap: 10px; z-index: 1000; }
+        .fab-menu.active { display: flex; }
+        .fab-item { background: white; padding: 10px 15px; border-radius: 4px; font-weight: bold; border: 1px solid var(--oko-beige); font-size: 0.8rem; text-transform: uppercase; }
 
-        @media (max-width: 480px) {
-            .stats-bar { grid-template-columns: repeat(4, 1fr); gap: 5px; }
-            .stat-number { font-size: 1rem; }
-            .stat-label { font-size: 0.55rem; }
-        }
+        .loader-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
     </style>
 </head>
 <body>
+
     <div id="loader" class="loader-overlay"><h2>ОБРАБОТКА...</h2></div>
-    
-    <div id="syncStatus" class="sync-status sync-offline" style="display: none;">
-        <span id="syncIcon">⚠️</span>
-        <span id="syncText">Offline</span>
-    </div>
 
     <div class="container">
         <header>
-            <h1>📦 Инвентаризация Cloud</h1>
-            <p>Синхронизация в реальном времени</p>
+            <h1>📦 Инвентарь ОКО</h1>
+            <div id="syncStatus" class="sync-status sync-offline">
+                <span id="syncIcon">⚠️</span> <span id="syncText">Офлайн</span>
+            </div>
         </header>
 
-        <!-- Основная статистика -->
         <div class="stats-bar">
-            <div class="stat-card">
-                <div class="stat-number" id="totalItems">0</div>
-                <div class="stat-label">ВСЕГО</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="okItems">0</div>
-                <div class="stat-label">ОК</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="repairItems">0</div>
-                <div class="stat-label">РЕМОНТ</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="checkToday">0</div>
-                <div class="stat-label">СЕГОДНЯ</div>
-            </div>
+            <div class="stat-card"><div class="stat-number" id="totalItems">0</div><div class="stat-label">ВСЕГО</div></div>
+            <div class="stat-card"><div class="stat-number" id="okItems">0</div><div class="stat-label">ОК</div></div>
+            <div class="stat-card"><div class="stat-number" id="repairItems">0</div><div class="stat-label">РЕМОНТ</div></div>
+            <div class="stat-card"><div class="stat-number" id="checkToday">0</div><div class="stat-label">СЕГОДНЯ</div></div>
         </div>
 
-        <!-- Статистика локаций (Кликабельная) -->
         <div class="stats-bar loc-stats">
-            <div class="stat-card" onclick="filterByLoc('Зал')">
-                <div class="stat-number" id="locHall">0</div>
-                <div class="stat-label">ЗАЛ</div>
-            </div>
-            <div class="stat-card" onclick="filterByLoc('Кухня')">
-                <div class="stat-number" id="locKitchen">0</div>
-                <div class="stat-label">КУХНЯ</div>
-            </div>
-            <div class="stat-card" onclick="filterByLoc('Бар')">
-                <div class="stat-number" id="locBar">0</div>
-                <div class="stat-label">БАР</div>
-            </div>
-            <div class="stat-card" onclick="filterByLoc('Склад')">
-                <div class="stat-number" id="locWh">0</div>
-                <div class="stat-label">СКЛАД</div>
-            </div>
+            <div class="stat-card" onclick="filterByLoc('Зал')"><div class="stat-number" id="locHall">0</div><div class="stat-label">ЗАЛ</div></div>
+            <div class="stat-card" onclick="filterByLoc('Кухня')"><div class="stat-number" id="locKitchen">0</div><div class="stat-label">КУХНЯ</div></div>
+            <div class="stat-card" onclick="filterByLoc('Бар')"><div class="stat-number" id="locBar">0</div><div class="stat-label">БАР</div></div>
+            <div class="stat-card" onclick="filterByLoc('Склад')"><div class="stat-number" id="locWh">0</div><div class="stat-label">СКЛАД</div></div>
         </div>
 
-        <input type="text" class="search-box" id="searchInput" placeholder="🔍 Поиск (название, ID, локация или подгруппа)..." onkeyup="renderItems()">
-
-        <div id="itemsContainer" class="items-list"></div>
-
-        <div id="emptyState" class="empty-state" style="display: none; text-align: center; color: white; padding: 20px;">
-            <h3>📭 Нет предметов</h3>
-            <p>Нажмите + чтобы добавить</p>
-        </div>
+        <input type="text" class="search-box" id="searchInput" placeholder="Поиск (название, ID, группа)..." onkeyup="renderItems()">
+        <div id="itemsContainer"></div>
     </div>
 
-    <!-- FAB -->
-    <div class="fab-container">
-        <div class="fab-menu" id="fabMenu">
-            <button class="fab-item" onclick="openAddModal()">➕ Добавить</button>
-            <button class="fab-item" onclick="openScanner()">📱 Сканировать</button>
-            <button class="fab-item" onclick="exportToExcel()">📊 Excel</button>
-        </div>
-        <button class="fab" onclick="toggleFab()">+</button>
+    <button class="fab" onclick="document.getElementById('fabMenu').classList.toggle('active')">+</button>
+    <div class="fab-menu" id="fabMenu">
+        <button class="fab-item" onclick="openAddModal()">Добавить</button>
+        <button class="fab-item" onclick="openScanner()">Сканер</button>
+        <button class="fab-item" onclick="exportToExcel()">Excel</button>
     </div>
 
-    <!-- Модалка добавления -->
-    <div id="addModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>➕ Новый объект</h2>
-                <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="addItemForm">
-                    <div class="form-group">
-                        <label>ID Объекта</label>
-                        <input type="text" id="addId" readonly style="background: #f0f0f0;">
-                    </div>
-                    <div class="form-group">
-                        <label>Название *</label>
-                        <input type="text" id="itemName" required placeholder="Например: Салфетница">
-                    </div>
-                    <div class="form-group">
-                        <label>Локация</label>
-                        <select id="itemLocation">
-                            <option value="Зал">Зал</option>
-                            <option value="Кухня">Кухня</option>
-                            <option value="Бар">Бар</option>
-                            <option value="Склад">Склад</option>
-                            <option value="Офис">Офис</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Подгруппа</label>
-                        <select id="addSubCatSelect" onchange="checkNewSub('add')">
-                            <!-- Подгрузится из базы -->
-                        </select>
-                        <input type="text" id="addCustomSub" class="form-group edit-input-sub" placeholder="Назовите новую подгруппу">
-                    </div>
-                    <div class="form-group">
-                        <label>Фотография</label>
-                        <input type="file" id="itemPhoto" accept="image/*" onchange="previewImage(this)">
-                        <img id="imagePreview" style="width: 100%; border-radius: 10px; margin-top: 10px; display: none;">
-                    </div>
-                    <button type="submit" class="btn btn-primary">💾 Сохранить в облако</button>
-                </form>
-            </div>
-        </div>
-    </div>
+    <div id="addModal" class="modal"><div class="modal-content">
+        <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
+        <h2 style="color:var(--oko-green)">НОВЫЙ ОБЪЕКТ</h2><br>
+        <input type="text" id="addId" class="search-box" readonly>
+        <input type="text" id="itemName" class="search-box" placeholder="Название">
+        
+        <label>Локация:</label>
+        <select id="itemLocation" class="search-box">
+            <option value="Зал">Зал</option>
+            <option value="Кухня">Кухня</option>
+            <option value="Бар">Бар</option>
+            <option value="Склад">Склад</option>
+            <option value="Офис">Офис</option>
+        </select>
 
-    <!-- Модалка сканера -->
-    <div id="scannerModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>📱 Сканирование QR</h2>
-                <button class="close-btn" onclick="closeScanner()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="reader"></div>
-            </div>
-        </div>
-    </div>
+        <label>Подгруппа:</label>
+        <select id="addSubCatSelect" class="search-box" onchange="checkNewSub()">
+            <!-- JS -->
+        </select>
+        <input type="text" id="addCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Новая подгруппа">
+        
+        <label>Фотография:</label>
+        <input type="file" id="itemPhoto" class="search-box" accept="image/*">
+        
+        <button class="btn btn-primary" onclick="saveNewItem()">Сохранить в облако</button>
+    </div></div>
 
-    <!-- Модалка деталей -->
-    <div id="itemModal" class="modal">
-        <div class="modal-content" id="itemModalContent"></div>
-    </div>
+    <div id="itemModal" class="modal"><div class="modal-content" id="itemModalContent"></div></div>
+
+    <div id="scannerModal" class="modal"><div class="modal-content">
+        <button class="close-btn" onclick="closeScanner()">&times;</button>
+        <div id="reader"></div>
+    </div></div>
 
     <script>
-        // ==========================================
-        // FIREBASE CONFIGURATION - НЕ ТРОГАТЬ
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
             authDomain: "inventory-oko.firebaseapp.com",
@@ -321,85 +164,57 @@
             appId: "1:528327448142:web:c0bde5327bd1464c81951f"
         };
 
-        // ==========================================
-        // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-        // ==========================================
-        let db = null;
-        let items = [];
-        let subCategories = [];
-        let html5QrCode = null;
-        const DEFAULT_PHOTO = 'https://via.placeholder.com/400x200?text=НЕТ+ФОТО';
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let items = [], subCategories = [], html5QrCode = null;
+        const DEFAULT_PHOTO = 'https://via.placeholder.com/400x200?text=OKO';
 
-        // ==========================================
-        // ИНИЦИАЛИЗАЦИЯ
-        // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-
-            // Слушаем предметы
-            db.ref('inventory').on('value', (snap) => {
+            db.ref('inventory').on('value', snap => {
                 items = snap.val() ? Object.values(snap.val()) : [];
-                refreshUI();
-                checkUrlParam();
+                renderItems(); updateStats();
+                const urlId = new URLSearchParams(window.location.search).get('id');
+                if (urlId) { window.history.replaceState({}, '', window.location.origin + window.location.pathname); showItemDetail(urlId); }
             });
 
-            // Слушаем подгруппы
-            db.ref('settings/subCategories').on('value', (snap) => {
+            db.ref('settings/subCategories').on('value', snap => {
                 subCategories = snap.val() ? Object.values(snap.val()) : [];
-                updateSubCategoryDropdowns();
+                updateDropdowns();
             });
 
-            // Статус подключения
+            // ИСПРАВЛЕННАЯ ЛОГИКА СТАТУСА С ИКОНКАМИ
             db.ref('.info/connected').on('value', snap => {
-                const status = document.getElementById('syncStatus');
-                status.style.display = 'flex';
-                status.className = snap.val() ? 'sync-status sync-online' : 'sync-status sync-offline';
-                document.getElementById('syncText').innerText = snap.val() ? 'Онлайн' : 'Офлайн';
+                const statusDiv = document.getElementById('syncStatus');
+                const icon = document.getElementById('syncIcon');
+                const text = document.getElementById('syncText');
+
+                if (snap.val()) {
+                    statusDiv.className = 'sync-status sync-online';
+                    icon.innerText = '🟢';
+                    text.innerText = 'Онлайн';
+                } else {
+                    statusDiv.className = 'sync-status sync-offline';
+                    icon.innerText = '⚠️';
+                    text.innerText = 'Офлайн';
+                }
             });
         });
 
-        function checkUrlParam() {
-            const id = new URLSearchParams(window.location.search).get('id');
-            if (id) {
-                window.history.replaceState({}, '', window.location.origin + window.location.pathname);
-                showItemDetail(id);
-            }
+        function updateDropdowns() {
+            const sel = document.getElementById('addSubCatSelect');
+            sel.innerHTML = '<option value="">-- Без подгруппы --</option>';
+            subCategories.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
+            sel.innerHTML += '<option value="NEW" style="color:blue;">+ НОВАЯ ГРУППА</option>';
         }
 
-        // ==========================================
-        // UI ЛОГИКА
-        // ==========================================
-        function toggleFab() { document.getElementById('fabMenu').classList.toggle('active'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-        
+        function checkNewSub() {
+            document.getElementById('addCustomSub').style.display = (document.getElementById('addSubCatSelect').value === 'NEW') ? 'block' : 'none';
+        }
+
         function filterByLoc(loc) {
-            const input = document.getElementById('searchInput');
-            input.value = (input.value === loc) ? '' : loc;
+            const inp = document.getElementById('searchInput');
+            inp.value = (inp.value === loc) ? '' : loc;
             renderItems();
-        }
-
-        function updateSubCategoryDropdowns() {
-            const select = document.getElementById('addSubCatSelect');
-            select.innerHTML = '<option value="">-- Без подгруппы --</option>';
-            subCategories.forEach(cat => {
-                select.innerHTML += `<option value="${cat}">${cat}</option>`;
-            });
-            select.innerHTML += '<option value="CREATE_NEW" style="color:blue;">+ НОВАЯ ПОДГРУППА</option>';
-        }
-
-        function checkNewSub(type) {
-            const select = document.getElementById('addSubCatSelect');
-            document.getElementById('addCustomSub').style.display = (select.value === 'CREATE_NEW') ? 'block' : 'none';
-        }
-
-        function previewImage(input) {
-            const preview = document.getElementById('imagePreview');
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
-                reader.readAsDataURL(input.files[0]);
-            }
         }
 
         function openAddModal() {
@@ -408,151 +223,89 @@
             document.getElementById('addModal').classList.add('active');
         }
 
-        // ==========================================
-        // CRUD ОПЕРАЦИИ
-        // ==========================================
-        document.getElementById('addItemForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('addId').value;
-            const name = document.getElementById('itemName').value.trim();
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        async function saveNewItem() {
+            const id = document.getElementById('addId').value, name = document.getElementById('itemName').value.trim();
             const loc = document.getElementById('itemLocation').value;
             let sub = document.getElementById('addSubCatSelect').value;
-            const customSub = document.getElementById('addCustomSub').value.trim();
+            const custom = document.getElementById('addCustomSub').value.trim();
             const file = document.getElementById('itemPhoto').files[0];
 
-            if (sub === 'CREATE_NEW') {
-                if (!customSub) return alert("Введите название подгруппы!");
-                sub = customSub;
-                db.ref('settings/subCategories').push(sub);
-            }
+            if (!name) return alert("Введите имя!");
+            if (sub === 'NEW') { if (!custom) return alert("Имя группы!"); sub = custom; db.ref('settings/subCategories').push(sub); }
 
             document.getElementById('loader').style.display = 'flex';
-            
             try {
-                let photoUrl = DEFAULT_PHOTO;
-                if (file) {
-                    // Конвертация в Base64 для простоты (как в вашем исходном коде)
-                    photoUrl = await new Promise(resolve => {
-                        const reader = new FileReader();
-                        reader.onload = e => resolve(e.target.result);
-                        reader.readAsDataURL(file);
-                    });
-                }
-
+                let photo = DEFAULT_PHOTO;
+                if (file) photo = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); });
+                
                 await db.ref('inventory/' + id).set({
-                    id, name, location: loc, sub: sub || "Прочее",
-                    photo: photoUrl, status: 'ok',
-                    lastCheck: 'Нет',
-                    addedDate: new Date().toLocaleDateString('ru-RU')
+                    id, name, location: loc, sub: sub || "Прочее", photo, status: 'ok',
+                    lastCheck: 'Нет', addedDate: new Date().toLocaleDateString('ru-RU')
                 });
-
                 document.getElementById('loader').style.display = 'none';
                 closeModal('addModal');
-                e.target.reset();
-                document.getElementById('imagePreview').style.display = 'none';
-            } catch (err) {
-                document.getElementById('loader').style.display = 'none';
-                alert("Ошибка: " + err.message);
-            }
-        });
-
-        function refreshUI() { renderItems(); updateStats(); }
+                document.getElementById('itemName').value = ""; document.getElementById('itemPhoto').value = "";
+            } catch (e) { document.getElementById('loader').style.display = 'none'; alert(e.message); }
+        }
 
         function renderItems() {
-            const container = document.getElementById('itemsContainer');
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            
-            const filtered = items.filter(i => 
-                i.name.toLowerCase().includes(search) || 
-                i.id.toLowerCase().includes(search) || 
-                i.location.toLowerCase().includes(search) ||
-                (i.sub && i.sub.toLowerCase().includes(search))
-            );
-
-            container.innerHTML = filtered.map(item => {
+            const container = document.getElementById('itemsContainer'), search = document.getElementById('searchInput').value.toLowerCase();
+            container.innerHTML = '';
+            items.filter(i => i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search) || i.location.toLowerCase().includes(search) || (i.sub && i.sub.toLowerCase().includes(search))).forEach(item => {
+                const div = document.createElement('div'); div.className = 'item-card';
+                div.onclick = () => showItemDetail(item.id);
                 const subPart = (item.sub && item.sub !== "Прочее") ? ` | 📂 ${item.sub}` : "";
-                const statusBadge = item.status === 'repair' ? '<span class="status-badge status-repair">РЕМОНТ</span>' : '';
+                const status = item.status === 'repair' ? '<div class="status-badge">РЕМОНТ</div>' : '';
                 
-                return `
-                    <div class="item-card" onclick="showItemDetail('${item.id}')">
-                        <img src="${item.photo || DEFAULT_PHOTO}" class="item-image">
-                        <div class="item-content">
-                            <div style="display:flex; justify-content:space-between;">
-                                <strong style="font-size:1.1rem;">${item.name}</strong>
-                                ${statusBadge}
-                            </div>
-                            <div style="font-size:0.85rem; color:#666; margin: 5px 0;">
-                                ID: ${item.id} | 📍 ${item.location}${subPart}
-                            </div>
-                            <div class="qr-section">
-                                <div id="qr-${item.id}" class="qr-code"></div>
-                                <div style="font-size:0.7rem; color:#999;">Нажми для деталей</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            filtered.forEach(item => {
-                new QRCode(document.getElementById(`qr-${item.id}`), {
-                    text: window.location.origin + window.location.pathname + "?id=" + item.id,
-                    width: 70, height: 70
-                });
+                div.innerHTML = `
+                    ${status}
+                    <img src="${item.photo || DEFAULT_PHOTO}" class="item-image">
+                    <div class="item-content">
+                        <strong style="font-size:1.1rem;">${item.name}</strong><br>
+                        <span style="font-size:0.85rem; color:#666;">ID: ${item.id} | 📍 ${item.location}${subPart}</span><br>
+                        <div class="qr-wrapper"><div id="qr-${item.id}"></div></div>
+                    </div>`;
+                container.appendChild(div);
+                new QRCode(document.getElementById(`qr-${item.id}`), { text: window.location.origin + window.location.pathname + "?id=" + item.id, width: 70, height: 70 });
             });
         }
 
         function showItemDetail(id) {
-            const item = items.find(i => i.id === id);
-            if (!item) return;
-
+            const item = items.find(i => i.id === id); if (!item) return;
             const statusBtn = item.status === 'repair' ? 
                 `<button class="btn btn-success" onclick="upStat('${item.id}', 'ok')">✅ ВЕРНУТЬ В СТРОЙ</button>` : 
                 `<button class="btn btn-danger" onclick="upStat('${item.id}', 'repair')">🔧 В РЕМОНТ</button>`;
 
             document.getElementById('itemModalContent').innerHTML = `
-                <div class="modal-header">
-                    <h2>${item.name}</h2>
-                    <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
+                <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
+                <img src="${item.photo}" class="detail-photo">
+                <h2 style="color:var(--oko-green)">${item.name}</h2>
+                <div style="background:white; padding:15px; border-radius:4px; margin:10px 0; border:1px solid #ddd;">
+                    <p><strong>ID:</strong> ${item.id}</p>
+                    <p><strong>Локация:</strong> ${item.location}</p>
+                    <p><strong>Группа:</strong> ${item.sub}</p>
+                    <p><strong>Проверка:</strong> ${item.lastCheck}</p>
+                    <p><strong>Статус:</strong> ${item.status === 'repair' ? 'РЕМОНТ' : 'ОК'}</p>
                 </div>
-                <div class="modal-body">
-                    <img src="${item.photo}" style="width:100%; border-radius:12px; margin-bottom:15px;">
-                    <div class="card">
-                        <p><strong>ID:</strong> ${item.id}</p>
-                        <p><strong>Локация:</strong> ${item.location}</p>
-                        <p><strong>Группа:</strong> ${item.sub || 'Нет'}</p>
-                        <p><strong>Последняя проверка:</strong> ${item.lastCheck}</p>
-                        <p><strong>Статус:</strong> ${item.status === 'repair' ? '🔴 В РЕМОНТЕ' : '🟢 ОК'}</p>
-                    </div>
-                    <button class="btn btn-primary" onclick="markCheck('${item.id}')">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
-                    ${statusBtn}
-                    <button class="btn btn-secondary" onclick="printQR('${item.id}')">🖨️ ПЕЧАТЬ QR</button>
-                    <button class="btn btn-danger" onclick="deleteItem('${item.id}')" style="margin-top:20px;">🗑️ УДАЛИТЬ ОБЪЕКТ</button>
-                </div>
-            `;
+                <button class="btn btn-primary" onclick="markCheck('${item.id}')">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
+                ${statusBtn}
+                <button class="btn" onclick="printQR('${item.id}')">Печать QR</button>
+                <button class="btn btn-danger" onclick="deleteItem('${item.id}')">Удалить объект</button>`;
             document.getElementById('itemModal').classList.add('active');
         }
 
-        // ==========================================
-        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-        // ==========================================
-        function markCheck(id) {
-            db.ref('inventory/' + id).update({ lastCheck: new Date().toLocaleDateString('ru-RU') });
-            closeModal('itemModal');
-        }
-
-        function upStat(id, status) {
-            db.ref('inventory/' + id).update({ status: status });
-            setTimeout(() => showItemDetail(id), 300);
-        }
-
+        function upStat(id, s) { db.ref('inventory/' + id).update({ status: s }); setTimeout(() => showItemDetail(id), 300); }
+        function markCheck(id) { db.ref('inventory/' + id).update({ lastCheck: new Date().toLocaleDateString('ru-RU') }); closeModal('itemModal'); }
+        
         async function deleteItem(id) {
-            if (!confirm("Удалить объект навсегда?")) return;
-            document.getElementById('loader').style.display = 'flex';
-            try {
+            if (confirm("Удалить?")) {
+                document.getElementById('loader').style.display = 'flex';
                 await db.ref('inventory/' + id).remove();
                 document.getElementById('loader').style.display = 'none';
                 closeModal('itemModal');
-            } catch (e) { alert(e.message); }
+            }
         }
 
         function updateStats() {
@@ -571,48 +324,24 @@
         function openScanner() {
             document.getElementById('scannerModal').classList.add('active');
             html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, text => {
                 const id = text.includes('?id=') ? text.split('?id=')[1] : text;
-                closeScanner();
-                showItemDetail(id);
+                closeScanner(); showItemDetail(id);
             });
         }
-
-        function closeScanner() {
-            if (html5QrCode) html5QrCode.stop();
-            closeModal('scannerModal');
-        }
+        function closeScanner() { if (html5QrCode) html5QrCode.stop(); closeModal('scannerModal'); }
 
         function printQR(id) {
             const item = items.find(i => i.id === id);
             const win = window.open('', '_blank');
-            win.document.write(`
-                <html><body style="text-align:center;font-family:sans-serif;padding:20px;">
-                    <h2>${item.name}</h2>
-                    <div id="q"></div>
-                    <p>ID: ${item.id} | Локация: ${item.location}</p>
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-                    <script>
-                        new QRCode(document.getElementById('q'), {
-                            text: "${window.location.origin + window.location.pathname + "?id=" + id}",
-                            width: 200, height: 200
-                        });
-                        setTimeout(() => window.print(), 500);
-                    <\/script>
-                </body></html>
-            `);
+            win.document.write(`<html><body style="text-align:center; padding:30px;"><h2>${item.name}</h2><div id="q" style="display:inline-block;"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById('q'), {text: "${window.location.origin + window.location.pathname + "?id=" + id}", width: 150, height: 150}); setTimeout(() => window.print(), 500);<\/script></body></html>`);
             win.document.close();
         }
 
         function exportToExcel() {
-            const data = items.map(i => ({
-                ID: i.id, Название: i.name, Локация: i.location, Подгруппа: i.sub, 
-                Статус: i.status === 'ok' ? 'ОК' : 'РЕМОНТ', Проверка: i.lastCheck
-            }));
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-            XLSX.writeFile(wb, "Inventory_Report.xlsx");
+            const data = items.map(i => ({ ID: i.id, Имя: i.name, Локация: i.location, Группа: i.sub, Статус: i.status }));
+            const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventory"); XLSX.writeFile(wb, "OKO_Cloud.xlsx");
         }
     </script>
 </body>

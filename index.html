@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Инвентарь ОКО</title>
+    <title>Инвентарь ОКО Cloud</title>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -28,7 +28,6 @@
         #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
         .login-card { background: white; padding: 30px; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; border: 2px solid var(--oko-beige); }
 
-        /* APP */
         #main-app { display: none; padding-bottom: 80px; }
         .container { max-width: 700px; margin: 0 auto; padding: 10px; }
         
@@ -68,13 +67,18 @@
         /* МОДАЛКИ */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; }
         .modal.active { display: block; }
+        #editModal { z-index: 3000 !important; } 
+
         .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); z-index: 10; }
 
         .detail-photo-box { background: #222; border-radius: 4px; display: flex; justify-content: center; height: 220px; overflow: hidden; margin-bottom: 15px; }
         .detail-photo { height: 100%; object-fit: contain; }
 
-        /* FAB MENU */
+        .btn-action { padding: 12px; border: 1px solid var(--oko-brown); border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 8px; text-transform: uppercase; background: white; font-size: 0.9rem; color: var(--oko-brown); }
+        .btn-green { background: var(--oko-green); color: white; border: none; }
+        .btn-danger { color: var(--oko-red); border-color: var(--oko-red); }
+
         .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--oko-green); color: white; border-radius: 50%; border: none; font-size: 2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; cursor: pointer; }
         .fab-menu { position: fixed; bottom: 90px; right: 20px; display: none; flex-direction: column; gap: 12px; z-index: 1000; }
         .fab-menu.active { display: flex; }
@@ -87,24 +91,19 @@
 
     <div id="loader" class="loader-overlay"><h2>ОБРАБОТКА...</h2></div>
 
-    <!-- ЭКРАН ВХОДА -->
     <div id="login-screen">
         <div class="login-card">
             <h1 style="color: var(--oko-green); margin-bottom: 20px;">Инвентарь ОКО</h1>
-            <input type="text" id="user-login" class="search-box" placeholder="Логин">
-            <input type="password" id="user-pass" class="search-box" placeholder="Пароль">
-            <button class="btn" style="background:var(--oko-green); color:white; width:100%; padding:12px; border:none; font-weight:bold; cursor:pointer;" onclick="checkAccess()">ВОЙТИ</button>
+            <input type="text" id="user-login" class="search-box" placeholder="Логин" autocapitalize="none" autocomplete="off">
+            <input type="password" id="user-pass" class="search-box" placeholder="Пароль" autocapitalize="none">
+            <button class="btn-action btn-green" onclick="checkAccess()">ВОЙТИ</button>
         </div>
     </div>
 
-    <!-- ПРИЛОЖЕНИЕ -->
     <div id="main-app">
         <div class="container">
             <header>
-                <div class="online-status-box">
-                    <div id="statusDot" class="dot"></div>
-                    <span id="statusLabel">OFFLINE</span>
-                </div>
+                <div class="online-status-box"><div id="statusDot" class="dot"></div><span id="statusLabel">OFFLINE</span></div>
                 <div class="header-title">Инвентарь ОКО</div>
                 <button class="logout-btn" onclick="logout()">Выход</button>
             </header>
@@ -130,12 +129,11 @@
         <div class="fab-menu" id="fabMenu">
             <button class="fab-item" onclick="openAddModal()">Добавить объект</button>
             <button class="fab-item" onclick="openScanner()">Сканер QR</button>
-            <button class="fab-item" onclick="printAllQR()" style="background: #eef2ff; color: #3730a3;">Печать всех QR</button>
+            <button class="fab-item" onclick="printAllQR()" style="color: blue;">Печать всех QR</button>
             <button class="fab-item" onclick="exportToExcel()">Excel отчет</button>
         </div>
     </div>
 
-    <!-- Модалки -->
     <div id="addModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
         <h2 style="color:var(--oko-green)">НОВЫЙ ОБЪЕКТ</h2><br>
@@ -146,9 +144,9 @@
             <option value="Зал">Зал</option><option value="Кухня">Кухня</option><option value="Бар">Бар</option><option value="Склад">Склад</option><option value="Офис">Офис</option>
         </select>
         <label>Подгруппа:</label><select id="addSubCatSelect" class="search-box" onchange="checkNewSub('add')"></select>
-        <input type="text" id="addCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Название группы">
+        <input type="text" id="addCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Назовите новую группу">
         <label>Фотография:</label><input type="file" id="itemPhoto" class="search-box" accept="image/*">
-        <button class="btn" style="background:var(--oko-green); color:white; width:100%;" onclick="saveNewItem()">СОХРАНИТЬ</button>
+        <button class="btn-action btn-green" onclick="saveNewItem()">СОХРАНИТЬ</button>
     </div></div>
 
     <div id="editModal" class="modal"><div class="modal-content">
@@ -162,15 +160,20 @@
         </select>
         <label>Подгруппа:</label><select id="editSubCatSelect" class="search-box" onchange="checkNewSub('edit')"></select>
         <input type="text" id="editCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Новая группа">
-        <label>Сменить фото:</label><input type="file" id="editItemPhoto" class="search-box" accept="image/*">
-        <button class="btn" style="background:var(--oko-green); color:white; width:100%;" onclick="saveEditChanges()">ПРИМЕНИТЬ</button>
+        <label>Заменить фото:</label><input type="file" id="editItemPhoto" class="search-box" accept="image/*">
+        <button class="btn-action btn-green" onclick="saveEditChanges()">ПРИМЕНИТЬ</button>
     </div></div>
 
     <div id="itemModal" class="modal"><div class="modal-content" id="itemModalContent"></div></div>
     <div id="scannerModal" class="modal"><div class="modal-content"><button class="close-btn" onclick="closeScanner()">&times;</button><div id="reader"></div></div></div>
 
     <script>
-        const USERS = { "Sam": "oko2024", "Radmir": "oko 2025" };
+        // БАЗА ПОЛЬЗОВАТЕЛЕЙ (БЕЗ ЛИШНИХ ПРОБЕЛОВ)
+        const USERS = { 
+            "Sam": "oko2024", 
+            "Radmir": "oko 2025" 
+        };
+
         const firebaseConfig = {
             apiKey: "AIzaSyAk1A8PBDpSQjjiFoKyprSvzK4jO9Us_34",
             authDomain: "inventory-oko.firebaseapp.com",
@@ -186,14 +189,19 @@
         let items = [], subCategories = [], globalStatusFilter = 'all', html5QrCode = null;
 
         function checkAccess() {
-            const l = document.getElementById('user-login').value;
-            const p = document.getElementById('user-pass').value;
-            if (USERS[l] === p) {
+            // Удаляем случайные пробелы по бокам при вводе
+            const l = document.getElementById('user-login').value.trim();
+            const p = document.getElementById('user-pass').value.trim();
+            
+            if (USERS[l] && USERS[l] === p) {
                 localStorage.setItem('oko_auth', 'true');
                 localStorage.setItem('oko_user', l);
                 showApp();
-            } else alert("Ошибка входа!");
+            } else {
+                alert("Ошибка входа! Проверьте логин (Radmir) и пароль (oko 2025)");
+            }
         }
+
         function logout() { localStorage.removeItem('oko_auth'); localStorage.removeItem('oko_user'); location.reload(); }
         if (localStorage.getItem('oko_auth') === 'true') showApp();
 
@@ -224,8 +232,7 @@
         async function saveNewItem() {
             const id = document.getElementById('addId').value, name = document.getElementById('itemName').value.trim();
             const loc = document.getElementById('itemLocation').value;
-            let sub = document.getElementById('addSubCatSelect').value, custom = document.getElementById('addCustomSub').value.trim();
-            const file = document.getElementById('itemPhoto').files[0];
+            let sub = document.getElementById('addSubCatSelect').value, custom = document.getElementById('addCustomSub').value.trim(), file = document.getElementById('itemPhoto').files[0];
             const user = localStorage.getItem('oko_user') || "---";
 
             if (!name) return alert("Введите название!");
@@ -236,12 +243,9 @@
             try {
                 let photo = 'https://via.placeholder.com/400x200?text=НЕТ+ФОТО';
                 if (file) photo = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); });
-                await db.ref('inventory/' + id).set({ 
-                    id, name, location: loc, sub: sub || "Прочее", photo, status: 'ok', 
-                    lastCheck: 'Нет', addedDate: new Date().toLocaleDateString('ru-RU'),
-                    createdBy: user, updatedBy: user
-                });
+                await db.ref('inventory/' + id).set({ id, name, location: loc, sub: sub || "Прочее", photo, status: 'ok', lastCheck: 'Нет', addedDate: new Date().toLocaleDateString('ru-RU'), createdBy: user, updatedBy: user });
                 document.getElementById('loader').style.display = 'none'; closeModal('addModal');
+                document.getElementById('itemName').value = ""; document.getElementById('itemPhoto').value = "";
             } catch (e) { document.getElementById('loader').style.display = 'none'; alert(e.message); }
         }
 
@@ -282,7 +286,7 @@
 
         function showItemDetail(id) {
             const item = items.find(i => i.id === id); if (!item) return;
-            const statusBtn = item.status === 'repair' ? `<button class="btn btn-success" onclick="upStat('${item.id}', 'ok')" style="width:100%;">✅ ВЕРНУТЬ В СТРОЙ</button>` : `<button class="btn btn-danger" onclick="upStat('${item.id}', 'repair')" style="width:100%;">🔧 В РЕМОНТ</button>`;
+            const statusBtn = item.status === 'repair' ? `<button class="btn-action btn-green" onclick="upStat('${item.id}', 'ok')" style="width:100%;">✅ ВЕРНУТЬ В СТРОЙ</button>` : `<button class="btn-action btn-danger" onclick="upStat('${item.id}', 'repair')" style="width:100%; border-color:red; color:red;">🔧 В РЕМОНТ</button>`;
             document.getElementById('itemModalContent').innerHTML = `
                 <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
                 <div class="detail-photo-box"><img src="${item.photo}" class="detail-photo"></div>
@@ -291,11 +295,11 @@
                     <p>ID: ${item.id}</p><p>Локация: ${item.location}</p><p>Группа: ${item.sub}</p><p>Проверка: ${item.lastCheck}</p>
                     <hr style="margin:5px 0; opacity:0.2;"><p style="font-size:0.8rem; color:#888;">Добавил: ${item.createdBy || '---'}</p><p style="font-size:0.8rem; color:#888;">Изменил: ${item.updatedBy || '---'}</p>
                 </div>
-                <button class="btn btn-primary" onclick="markCheck('${item.id}')" style="width:100%; margin-bottom:8px;">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
-                <button class="btn" onclick="openEditModal('${item.id}')" style="width:100%; margin-bottom:8px;">📦 ПЕРЕМЕСТИТЬ / ИЗМЕНИТЬ</button>
+                <button class="btn-action btn-green" onclick="markCheck('${item.id}')" style="width:100%; margin-bottom:8px;">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
+                <button class="btn-action" onclick="openEditModal('${item.id}')" style="width:100%; margin-bottom:8px;">📦 ПЕРЕМЕСТИТЬ / ИЗМЕНИТЬ</button>
                 ${statusBtn}
-                <button class="btn" onclick="printQR('${item.id}')" style="width:100%; margin-bottom:8px;">ПЕЧАТЬ QR</button>
-                <button class="btn btn-danger" onclick="deleteItem('${item.id}')" style="width:100%;">УДАЛИТЬ</button>`;
+                <button class="btn-action" onclick="printQR('${item.id}')" style="width:100%; margin-bottom:8px;">ПЕЧАТЬ QR</button>
+                <button class="btn-action btn-danger" onclick="deleteItem('${item.id}')" style="width:100%;">УДАЛИТЬ</button>`;
             document.getElementById('itemModal').classList.add('active');
         }
 

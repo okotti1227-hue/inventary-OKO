@@ -53,6 +53,19 @@
 
         .search-box { width: 100%; padding: 12px; border: 1px solid var(--oko-beige); margin-bottom: 15px; outline: none; font-size: 1rem; background: white; }
 
+        /* Заголовки подгрупп */
+        .group-header { 
+            background: var(--oko-green); 
+            color: white; 
+            padding: 8px 12px; 
+            margin: 20px 0 10px 0; 
+            border-radius: 4px; 
+            font-size: 0.9rem; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
         .item-card { background: white; border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--oko-beige); cursor: pointer; position: relative; }
         .item-image-container { width: 100%; height: 250px; background: #222; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .item-image { width: 100%; height: 100%; object-fit: contain; }
@@ -257,17 +270,40 @@
         function renderItems() {
             const container = document.getElementById('itemsContainer'), search = document.getElementById('searchInput').value.toLowerCase();
             container.innerHTML = '';
-            items.filter(i => {
+
+            // 1. Фильтруем данные
+            const filtered = items.filter(i => {
                 const ms = i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search) || i.location.toLowerCase().includes(search) || (i.sub && i.sub.toLowerCase().includes(search));
                 const mf = globalStatusFilter === 'all' ? true : i.status === globalStatusFilter;
                 return ms && mf;
-            }).forEach(item => {
-                const div = document.createElement('div'); div.className = 'item-card';
-                div.onclick = () => showItemDetail(item.id);
-                const status = item.status === 'repair' ? '<div class="status-badge">РЕМОНТ</div>' : '';
-                div.innerHTML = `${status}<div class="item-image-container"><img src="${item.photo}" class="item-image"></div><div class="item-content"><strong style="font-size:1.1rem;">${item.name}</strong><br><span style="font-size:0.85rem; color:#666;">ID: ${item.id} | 📍 ${item.location} | 📂 ${item.sub}</span><br><span style="font-size:0.8rem; color:#888;">Добавлен: ${item.addedDate || '---'}</span><br><div class="qr-wrapper"><div id="qr-${item.id}"></div></div></div>`;
-                container.appendChild(div);
-                new QRCode(document.getElementById(`qr-${item.id}`), { text: window.location.origin + window.location.pathname + "?id=" + item.id, width: 70, height: 70 });
+            });
+
+            // 2. Группируем по подгруппам
+            const groups = {};
+            filtered.forEach(item => {
+                const subName = item.sub || "Прочее";
+                if (!groups[subName]) groups[subName] = [];
+                groups[subName].push(item);
+            });
+
+            // 3. Сортируем названия подгрупп и отрисовываем
+            Object.keys(groups).sort().forEach(subName => {
+                // Создаем заголовок группы
+                const header = document.createElement('div');
+                header.className = 'group-header';
+                header.innerText = `${subName} (${groups[subName].length})`;
+                container.appendChild(header);
+
+                // Отрисовываем карточки этой группы
+                groups[subName].forEach(item => {
+                    const div = document.createElement('div'); 
+                    div.className = 'item-card';
+                    div.onclick = () => showItemDetail(item.id);
+                    const status = item.status === 'repair' ? '<div class="status-badge">РЕМОНТ</div>' : '';
+                    div.innerHTML = `${status}<div class="item-image-container"><img src="${item.photo}" class="item-image"></div><div class="item-content"><strong style="font-size:1.1rem;">${item.name}</strong><br><span style="font-size:0.85rem; color:#666;">ID: ${item.id} | 📍 ${item.location} | 📂 ${item.sub}</span><br><span style="font-size:0.8rem; color:#888;">Добавлен: ${item.addedDate || '---'}</span><br><div class="qr-wrapper"><div id="qr-${item.id}"></div></div></div>`;
+                    container.appendChild(div);
+                    new QRCode(document.getElementById(`qr-${item.id}`), { text: window.location.origin + window.location.pathname + "?id=" + item.id, width: 70, height: 70 });
+                });
             });
         }
 

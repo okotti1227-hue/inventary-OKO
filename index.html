@@ -53,18 +53,7 @@
 
         .search-box { width: 100%; padding: 12px; border: 1px solid var(--oko-beige); margin-bottom: 15px; outline: none; font-size: 1rem; background: white; }
 
-        /* Заголовки подгрупп */
-        .group-header { 
-            background: var(--oko-green); 
-            color: white; 
-            padding: 8px 12px; 
-            margin: 20px 0 10px 0; 
-            border-radius: 4px; 
-            font-size: 0.9rem; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            font-weight: bold;
-        }
+        .group-header { background: var(--oko-green); color: white; padding: 8px 12px; margin: 20px 0 10px 0; border-radius: 4px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
 
         .item-card { background: white; border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--oko-beige); cursor: pointer; position: relative; }
         .item-image-container { width: 100%; height: 250px; background: #222; display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -74,6 +63,10 @@
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; }
         .modal.active { display: block; }
+        
+        /* ИСПРАВЛЕНИЕ: Окно изменения поверх всех */
+        #editModal { z-index: 3000 !important; }
+
         .modal-content { background: var(--oko-white); width: 100%; min-height: 100vh; padding: 20px; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 2.5rem; border: none; background: none; cursor: pointer; color: var(--oko-brown); z-index: 10; }
 
@@ -270,35 +263,17 @@
         function renderItems() {
             const container = document.getElementById('itemsContainer'), search = document.getElementById('searchInput').value.toLowerCase();
             container.innerHTML = '';
-
-            // 1. Фильтруем данные
             const filtered = items.filter(i => {
                 const ms = i.name.toLowerCase().includes(search) || i.id.toLowerCase().includes(search) || i.location.toLowerCase().includes(search) || (i.sub && i.sub.toLowerCase().includes(search));
                 const mf = globalStatusFilter === 'all' ? true : i.status === globalStatusFilter;
                 return ms && mf;
             });
-
-            // 2. Группируем по подгруппам
             const groups = {};
-            filtered.forEach(item => {
-                const subName = item.sub || "Прочее";
-                if (!groups[subName]) groups[subName] = [];
-                groups[subName].push(item);
-            });
-
-            // 3. Сортируем названия подгрупп и отрисовываем
+            filtered.forEach(item => { const subName = item.sub || "Прочее"; if (!groups[subName]) groups[subName] = []; groups[subName].push(item); });
             Object.keys(groups).sort().forEach(subName => {
-                // Создаем заголовок группы
-                const header = document.createElement('div');
-                header.className = 'group-header';
-                header.innerText = `${subName} (${groups[subName].length})`;
-                container.appendChild(header);
-
-                // Отрисовываем карточки этой группы
+                const header = document.createElement('div'); header.className = 'group-header'; header.innerText = `${subName} (${groups[subName].length})`; container.appendChild(header);
                 groups[subName].forEach(item => {
-                    const div = document.createElement('div'); 
-                    div.className = 'item-card';
-                    div.onclick = () => showItemDetail(item.id);
+                    const div = document.createElement('div'); div.className = 'item-card'; div.onclick = () => showItemDetail(item.id);
                     const status = item.status === 'repair' ? '<div class="status-badge">РЕМОНТ</div>' : '';
                     div.innerHTML = `${status}<div class="item-image-container"><img src="${item.photo}" class="item-image"></div><div class="item-content"><strong style="font-size:1.1rem;">${item.name}</strong><br><span style="font-size:0.85rem; color:#666;">ID: ${item.id} | 📍 ${item.location} | 📂 ${item.sub}</span><br><span style="font-size:0.8rem; color:#888;">Добавлен: ${item.addedDate || '---'}</span><br><div class="qr-wrapper"><div id="qr-${item.id}"></div></div></div>`;
                     container.appendChild(div);
@@ -327,17 +302,19 @@
             document.getElementById('itemModal').classList.add('active');
         }
 
+        // ИСПРАВЛЕНИЕ: Маленький размер QR для печати (80px)
         function printQR(id) {
             const it = items.find(i => i.id === id); 
             const win = window.open('', '_blank');
-            win.document.write(`<html><head><title>${it.name}</title><style>body { font-family: serif; text-align: center; padding: 20px; } #q { display: inline-block; margin-top: 10px; } .back-btn { display: block; margin: 20px auto; padding: 10px 20px; background: #5C6041; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-decoration: none; width: fit-content; } @media print { .back-btn { display: none; } }</style><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script></head><body><button class="back-btn" onclick="window.close()">← ВЕРНУТЬСЯ В ПРИЛОЖЕНИЕ</button><h2>${it.name}</h2><div id="q"></div><p style="font-weight:bold;">${it.id}</p><script>new QRCode(document.getElementById('q'), {text: "${window.location.origin + window.location.pathname}?id=${id}", width: 150, height: 150}); window.onload = () => { window.print(); window.onafterprint = () => window.close(); };<\/script></body></html>`);
+            win.document.write(`<html><head><title>${it.name}</title><style>body { font-family: serif; text-align: center; padding: 10px; } #q { display: inline-block; } .back-btn { display: block; margin: 10px auto; padding: 8px; background: #5C6041; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-decoration: none; font-size:12px; } @media print { .back-btn { display: none; } }</style><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script></head><body><button class="back-btn" onclick="window.close()">← НАЗАД</button><div id="q"></div><div style="font-size:10px; font-weight:bold;">${it.name}<br>${it.id}</div><script>new QRCode(document.getElementById('q'), {text: "${window.location.origin + window.location.pathname}?id=${id}", width: 80, height: 80}); window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); };<\/script></body></html>`);
             win.document.close();
         }
 
+        // ИСПРАВЛЕНИЕ: Массовая печать QR (75px)
         function printAllQR() {
             if (items.length === 0) return alert("Пусто!");
             const pWin = window.open('', '_blank');
-            pWin.document.write(`<html><head><title>Печать всех QR</title><style>body { font-family: "Times New Roman", serif; display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; } .qr-card { border: 1px solid #ccc; padding: 10px; margin: 10px; text-align: center; width: 160px; page-break-inside: avoid; } .qr-name { font-weight: bold; font-size: 12px; height: 32px; overflow: hidden; } .qr-id { font-size: 10px; color: #666; margin-top: 4px; } .back-btn { position: fixed; top: 10px; right: 10px; padding: 10px 20px; background: #5C6041; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; z-index: 9999; } @media print { .back-btn { display: none; } }</style><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script></head><body><button class="back-btn" onclick="window.close()">← ВЕРНУТЬСЯ</button><div id="grid" style="display: flex; flex-wrap: wrap; justify-content: center;"></div><script>const data = ${JSON.stringify(items)}; const grid = document.getElementById('grid'); const url = "${window.location.origin + window.location.pathname}"; data.forEach(it => { const div = document.createElement('div'); div.className = 'qr-card'; div.innerHTML = '<div class="qr-name">' + it.name + '</div><div id="q-' + it.id + '"></div><div class="qr-id">' + it.id + '</div>'; grid.appendChild(div); new QRCode(document.getElementById('q-' + it.id), { text: url + "?id=" + it.id, width: 130, height: 130 }); }); window.onload = () => { setTimeout(() => { window.print(); window.onafterprint = () => window.close(); }, 1000); };<\/script></body></html>`);
+            pWin.document.write(`<html><head><title>Печать всех QR</title><style>body { font-family: sans-serif; display: flex; flex-wrap: wrap; justify-content: flex-start; padding: 10px; } .qr-card { border: 0.5px solid #eee; padding: 5px; margin: 3px; text-align: center; width: 90px; page-break-inside: avoid; } .qr-name { font-weight: bold; font-size: 8px; height: 20px; overflow: hidden; line-height:10px; } .qr-id { font-size: 7px; color: #333; } .back-btn { position: fixed; top: 10px; right: 10px; padding: 10px; background: #5C6041; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; z-index: 9999; } @media print { .back-btn { display: none; } }</style><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script></head><body><button class="back-btn" onclick="window.close()">← ВЕРНУТЬСЯ</button><div id="grid" style="display: flex; flex-wrap: wrap;"></div><script>const data = ${JSON.stringify(items)}; const grid = document.getElementById('grid'); const url = "${window.location.origin + window.location.pathname}"; data.forEach(it => { const div = document.createElement('div'); div.className = 'qr-card'; div.innerHTML = '<div class="qr-name">' + it.name + '</div><div id="q-' + it.id + '"></div><div class="qr-id">' + it.id + '</div>'; grid.appendChild(div); new QRCode(document.getElementById('q-' + it.id), { text: url + "?id=" + it.id, width: 75, height: 75 }); }); window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 1500); };<\/script></body></html>`);
             pWin.document.close();
             document.getElementById('fabMenu').classList.remove('active');
         }
@@ -350,52 +327,19 @@
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function openEditModal(id) { const it = items.find(i => i.id === id); document.getElementById('editItemTargetId').value = id; document.getElementById('editItemName').value = it.name; document.getElementById('editItemLocation').value = it.location; document.getElementById('editSubCatSelect').value = subCategories.includes(it.sub) ? it.sub : ""; document.getElementById('editModal').classList.add('active'); }
         function upStat(id, s) { db.ref('inventory/' + id).update({ status: s }); setTimeout(() => showItemDetail(id), 300); }
-        
-        function markCheck(id) { 
-            const user = localStorage.getItem('oko_user') || "---";
-            db.ref('inventory/' + id).update({ 
-                lastCheck: new Date().toLocaleDateString('ru-RU'),
-                lastCheckBy: user 
-            }); 
-            closeModal('itemModal'); 
-        }
-
+        function markCheck(id) { const user = localStorage.getItem('oko_user') || "---"; db.ref('inventory/' + id).update({ lastCheck: new Date().toLocaleDateString('ru-RU'), lastCheckBy: user }); closeModal('itemModal'); }
         async function deleteItem(id) { if (confirm("Удалить?")) { await db.ref('inventory/' + id).remove(); closeModal('itemModal'); } }
-
         function updateStats() {
-            document.getElementById('totalItems').innerText = items.length;
-            document.getElementById('okItems').innerText = items.filter(i => i.status === 'ok').length;
-            document.getElementById('repairItems').innerText = items.filter(i => i.status === 'repair').length;
-            document.getElementById('locHall').innerText = items.filter(i => i.location === 'Зал').length;
-            document.getElementById('locKitchen').innerText = items.filter(i => i.location === 'Кухня').length;
-            document.getElementById('locBar').innerText = items.filter(i => i.location === 'Бар').length;
-            document.getElementById('locWh').innerText = items.filter(i => i.location === 'Склад').length;
-
-            document.querySelectorAll('.stats-bar .stat-card').forEach(c => c.classList.remove('active-filter'));
-            const btn = document.getElementById('btn-' + globalStatusFilter);
-            if(btn) btn.classList.add('active-filter');
-
-            const now = new Date();
-            const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            const subContainer = document.getElementById('subStatsContent');
-            subContainer.innerHTML = '';
+            document.getElementById('totalItems').innerText = items.length; document.getElementById('okItems').innerText = items.filter(i => i.status === 'ok').length; document.getElementById('repairItems').innerText = items.filter(i => i.status === 'repair').length; document.getElementById('locHall').innerText = items.filter(i => i.location === 'Зал').length; document.getElementById('locKitchen').innerText = items.filter(i => i.location === 'Кухня').length; document.getElementById('locBar').innerText = items.filter(i => i.location === 'Бар').length; document.getElementById('locWh').innerText = items.filter(i => i.location === 'Склад').length;
+            document.querySelectorAll('.stats-bar .stat-card').forEach(c => c.classList.remove('active-filter')); const btn = document.getElementById('btn-' + globalStatusFilter); if(btn) btn.classList.add('active-filter');
+            const now = new Date(); const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1); const subContainer = document.getElementById('subStatsContent'); subContainer.innerHTML = '';
             const allSubs = [...new Set(items.map(i => i.sub || "Прочее"))].sort();
             allSubs.forEach(subName => {
                 const currentCount = items.filter(i => i.sub === subName).length;
-                const prevCount = items.filter(i => {
-                    if (i.sub !== subName) return false;
-                    if (!i.addedDate) return true;
-                    const parts = i.addedDate.split('.');
-                    const d = new Date(parts[2], parts[1] - 1, parts[0]);
-                    return d < startOfCurrentMonth;
-                }).length;
-                const row = document.createElement('div');
-                row.className = 'sub-stat-row';
-                row.innerHTML = `<span class="sub-stat-name">${subName}</span><span class="sub-stat-counts">${prevCount} &rarr; ${currentCount}</span>`;
-                subContainer.appendChild(row);
+                const prevCount = items.filter(i => { if (i.sub !== subName) return false; if (!i.addedDate) return true; const parts = i.addedDate.split('.'); const d = new Date(parts[2], parts[1] - 1, parts[0]); return d < startOfCurrentMonth; }).length;
+                const row = document.createElement('div'); row.className = 'sub-stat-row'; row.innerHTML = `<span class="sub-stat-name">${subName}</span><span class="sub-stat-counts">${prevCount} &rarr; ${currentCount}</span>`; subContainer.appendChild(row);
             });
         }
-
         function openScanner() { document.getElementById('scannerModal').classList.add('active'); html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, t => { const id = t.includes('?id=') ? t.split('?id=')[1] : t; closeScanner(); showItemDetail(id); }); }
         function closeScanner() { if (html5QrCode) html5QrCode.stop(); closeModal('scannerModal'); }
         function exportToExcel() { const data = items.map(i => ({ ID: i.id, Имя: i.name, Локация: i.location, Группа: i.sub, Статус: i.status, Проверил: i.lastCheckBy || '---', Дата_проверки: i.lastCheck })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inventory"); XLSX.writeFile(wb, "OKO_Cloud.xlsx"); }

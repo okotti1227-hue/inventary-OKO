@@ -82,9 +82,8 @@
 
         .loader-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
         
-        /* New Styles for Batch actions */
-        .batch-controls { background: #ece7d5; padding: 10px; border-radius: 4px; margin: 10px 0; border: 1px solid var(--oko-beige); }
-        .batch-title { font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; display: block; }
+        .action-box { background: #eee; padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #ccc; }
+        .action-label { font-size: 0.75rem; font-weight: bold; color: #555; display: block; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -109,9 +108,9 @@
             </header>
 
             <div class="stats-bar">
-                <div class="stat-card" id="btn-all" onclick="setStatFilter('all')"><div class="stat-number" id="totalItems">0</div><div class="stat-label">ВСЕГО</div></div>
-                <div class="stat-card" id="btn-ok" onclick="setStatFilter('ok')"><div class="stat-number" id="okItems">0</div><div class="stat-label">ОК</div></div>
-                <div class="stat-card" id="btn-repair" onclick="setStatFilter('repair')"><div class="stat-number" id="repairItems">0</div><div class="stat-label">РЕМОНТ</div></div>
+                <div class="stat-card" id="btn-all" onclick="setStatFilter('all')"><div class="stat-number" id="totalItems">0</div><div class="stat-label">ШТ. ВСЕГО</div></div>
+                <div class="stat-card" id="btn-ok" onclick="setStatFilter('ok')"><div class="stat-number" id="okItems">0</div><div class="stat-label">ШТ. ОК</div></div>
+                <div class="stat-card" id="btn-repair" onclick="setStatFilter('repair')"><div class="stat-number" id="repairItems">0</div><div class="stat-label">ШТ. РЕМОНТ</div></div>
             </div>
 
             <div class="stats-bar loc-stats">
@@ -122,7 +121,7 @@
             </div>
 
             <div id="subStatsList" class="sub-stats-container">
-                <div style="text-align:center; font-weight:bold; margin-bottom:5px; border-bottom:1px solid var(--oko-beige);">ДИНАМИКА ПО ГРУППАМ (Пр. мес / Сейчас)</div>
+                <div style="text-align:center; font-weight:bold; margin-bottom:5px; border-bottom:1px solid var(--oko-beige);">ДИНАМИКА ГРУПП (ШТ)</div>
                 <div id="subStatsContent"></div>
             </div>
 
@@ -139,13 +138,13 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ДОБАВЛЕНИЯ -->
+    <!-- ДОБАВЛЕНИЕ -->
     <div id="addModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
         <h2 style="color:var(--oko-green)">НОВЫЙ ОБЪЕКТ</h2><br>
         <input type="text" id="addId" class="search-box" readonly>
-        <input type="text" id="itemName" class="search-box" placeholder="Название (например: Стул)">
-        <label>Количество (будет создано столько QR):</label>
+        <input type="text" id="itemName" class="search-box" placeholder="Название">
+        <label>Количество (шт.):</label>
         <input type="number" id="itemQty" class="search-box" value="1" min="1">
         <label>Локация:</label>
         <select id="itemLocation" class="search-box">
@@ -153,24 +152,27 @@
         </select>
         <label>Подгруппа:</label><select id="addSubCatSelect" class="search-box" onchange="checkNewSub('add')"></select>
         <input type="text" id="addCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Назовите новую группу">
-        <label>Фотография (одна для всей партии):</label><input type="file" id="itemPhoto" class="search-box" accept="image/*">
-        <button class="btn-action btn-green" onclick="saveNewItem()">СОХРАНИТЬ ПАРТИЮ</button>
+        <label>Фотография:</label><input type="file" id="itemPhoto" class="search-box" accept="image/*">
+        <button class="btn-action btn-green" onclick="saveNewItem()">СОХРАНИТЬ</button>
     </div></div>
 
-    <!-- МОДАЛКА РЕДАКТИРОВАНИЯ -->
+    <!-- РЕДАКТИРОВАНИЕ -->
     <div id="editModal" class="modal"><div class="modal-content">
         <button class="close-btn" onclick="closeModal('editModal')">&times;</button>
-        <h2 style="color:var(--oko-green)">ПЕРЕМЕЩЕНИЕ / ИЗМЕНЕНИЕ</h2><br>
+        <h2 style="color:var(--oko-green)">ИЗМЕНЕНИЕ / ПЕРЕМЕЩЕНИЕ</h2><br>
         <input type="hidden" id="editItemTargetId">
-        <div id="batchEditInfo" style="margin-bottom:10px; font-weight:bold; color:var(--oko-green);"></div>
         <label>Название:</label><input type="text" id="editItemName" class="search-box">
-        <label>Новая локация:</label>
-        <select id="editItemLocation" class="search-box">
-            <option value="Зал">Зал</option><option value="Кухня">Кухня</option><option value="Бар">Бар</option><option value="Склад">Склад</option><option value="Офис">Офис</option>
-        </select>
-        <label>Сколько штук переместить?</label>
-        <input type="number" id="editQtyAction" class="search-box" value="1" min="1">
         
+        <div class="action-box">
+            <label class="action-label">ПЕРЕМЕЩЕНИЕ НА СКЛАД / В ДРУГУЮ ЛОКАЦИЮ:</label>
+            <label>Количество для перемещения:</label>
+            <input type="number" id="moveQty" class="search-box" value="0">
+            <label>Куда переместить:</label>
+            <select id="editItemLocation" class="search-box">
+                <option value="Зал">Зал</option><option value="Кухня">Кухня</option><option value="Бар">Бар</option><option value="Склад">Склад</option><option value="Офис">Офис</option>
+            </select>
+        </div>
+
         <label>Подгруппа:</label><select id="editSubCatSelect" class="search-box" onchange="checkNewSub('edit')"></select>
         <input type="text" id="editCustomSub" class="search-box" style="display:none; border:2px solid var(--oko-green);" placeholder="Новая группа">
         <label>Заменить фото:</label><input type="file" id="editItemPhoto" class="search-box" accept="image/*">
@@ -199,11 +201,8 @@
         function checkAccess() {
             const l = document.getElementById('user-login').value.trim();
             const p = document.getElementById('user-pass').value.trim();
-            if (USERS[l] === p) {
-                localStorage.setItem('oko_auth', 'true');
-                localStorage.setItem('oko_user', l);
-                showApp();
-            } else alert("Ошибка входа!");
+            if (USERS[l] === p) { localStorage.setItem('oko_auth', 'true'); localStorage.setItem('oko_user', l); showApp(); } 
+            else alert("Ошибка входа!");
         }
         function logout() { localStorage.removeItem('oko_auth'); localStorage.removeItem('oko_user'); location.reload(); }
         if (localStorage.getItem('oko_auth') === 'true') showApp();
@@ -229,13 +228,10 @@
         }
 
         async function saveNewItem() {
-            const baseId = document.getElementById('addId').value;
-            const name = document.getElementById('itemName').value.trim();
+            const id = document.getElementById('addId').value, name = document.getElementById('itemName').value.trim();
             const qty = parseInt(document.getElementById('itemQty').value) || 1;
             const loc = document.getElementById('itemLocation').value;
-            let sub = document.getElementById('addSubCatSelect').value;
-            let custom = document.getElementById('addCustomSub').value.trim();
-            let file = document.getElementById('itemPhoto').files[0];
+            let sub = document.getElementById('addSubCatSelect').value, custom = document.getElementById('addCustomSub').value.trim(), file = document.getElementById('itemPhoto').files[0];
             const user = localStorage.getItem('oko_user') || "---";
 
             if (!name) return alert("Введите название!");
@@ -245,56 +241,39 @@
             try {
                 let photo = 'https://via.placeholder.com/400x200?text=НЕТ+ФОТО';
                 if (file) photo = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); });
-                
-                const dateStr = new Date().toLocaleDateString('ru-RU');
-                
-                for(let i=1; i <= qty; i++) {
-                    const finalId = qty > 1 ? `${baseId}-${i}` : baseId;
-                    await db.ref('inventory/' + finalId).set({ 
-                        id: finalId, name, location: loc, sub: sub || "Прочее", 
-                        photo, status: 'ok', lastCheck: 'Нет', lastCheckBy: '---', 
-                        addedDate: dateStr, createdBy: user, updatedBy: user,
-                        repairReason: ''
-                    });
-                }
-
-                document.getElementById('loader').style.display = 'none'; 
-                closeModal('addModal');
-                document.getElementById('itemName').value = ""; document.getElementById('itemPhoto').value = "";
-                document.getElementById('itemQty').value = "1";
+                await db.ref('inventory/' + id).set({ id, name, qty, location: loc, sub: sub || "Прочее", photo, status: 'ok', lastCheck: 'Нет', lastCheckBy: '---', addedDate: new Date().toLocaleDateString('ru-RU'), createdBy: user, updatedBy: user });
+                document.getElementById('loader').style.display = 'none'; closeModal('addModal');
+                document.getElementById('itemName').value = ""; document.getElementById('itemPhoto').value = ""; document.getElementById('itemQty').value = 1;
             } catch (e) { document.getElementById('loader').style.display = 'none'; alert(e.message); }
         }
 
         async function saveEditChanges() {
-            const sourceId = document.getElementById('editItemTargetId').value;
-            const name = document.getElementById('editItemName').value.trim();
-            const loc = document.getElementById('editItemLocation').value;
-            const qtyToMove = parseInt(document.getElementById('editQtyAction').value) || 1;
-            let sub = document.getElementById('editSubCatSelect').value;
-            let custom = document.getElementById('editCustomSub').value.trim();
-            let file = document.getElementById('editItemPhoto').files[0];
+            const id = document.getElementById('editItemTargetId').value;
+            const original = items.find(i => i.id === id);
+            const newName = document.getElementById('editItemName').value.trim();
+            const moveQty = parseInt(document.getElementById('moveQty').value) || 0;
+            const newLoc = document.getElementById('editItemLocation').value;
+            let sub = document.getElementById('editSubCatSelect').value, custom = document.getElementById('editCustomSub').value.trim(), file = document.getElementById('editItemPhoto').files[0];
             const user = localStorage.getItem('oko_user') || "---";
 
-            const sourceItem = items.find(i => i.id === sourceId);
-            // Ищем все похожие предметы в той же локации для массового перемещения
-            const similarItems = items.filter(i => i.name === sourceItem.name && i.location === sourceItem.location && i.status === 'ok').slice(0, qtyToMove);
-
-            if (sub === 'NEW') { if (!custom) return alert("Группа!"); sub = custom; db.ref('settings/subCategories').push(sub); }
+            if (sub === 'NEW') { sub = custom; db.ref('settings/subCategories').push(sub); }
 
             document.getElementById('loader').style.display = 'flex';
             try {
-                let photo = null;
+                let photo = original.photo;
                 if (file) photo = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); });
 
-                for (let item of similarItems) {
-                    let up = { name, location: loc, sub: sub || "Прочее", updatedBy: user };
-                    if (photo) up.photo = photo;
-                    await db.ref('inventory/' + item.id).update(up);
+                // Если перемещаем часть
+                if (moveQty > 0 && moveQty < original.qty) {
+                    const newId = 'OKO-' + Math.floor(1000 + Math.random() * 9000);
+                    await db.ref('inventory/' + newId).set({ ...original, id: newId, name: newName, qty: moveQty, location: newLoc, photo, updatedBy: user, sub: sub || original.sub });
+                    await db.ref('inventory/' + id).update({ qty: original.qty - moveQty, name: newName, photo, updatedBy: user, sub: sub || original.sub });
+                } else {
+                    // Обычное обновление (или перемещение всего)
+                    await db.ref('inventory/' + id).update({ name: newName, location: newLoc, sub: sub || original.sub, photo, updatedBy: user });
                 }
-                
-                document.getElementById('loader').style.display = 'none'; 
-                closeModal('editModal'); 
-                setTimeout(() => showItemDetail(sourceId), 300);
+
+                document.getElementById('loader').style.display = 'none'; closeModal('editModal');
             } catch (e) { document.getElementById('loader').style.display = 'none'; alert(e.message); }
         }
 
@@ -307,13 +286,13 @@
                 return ms && mf;
             });
             const groups = {};
-            filtered.forEach(item => { const subName = item.sub || "Прочее"; if (!groups[subName]) groups[subName] = []; groups[subName].push(item); });
-            Object.keys(groups).sort().forEach(subName => {
-                const header = document.createElement('div'); header.className = 'group-header'; header.innerText = `${subName} (${groups[subName].length} шт)`; container.appendChild(header);
-                groups[subName].forEach(item => {
+            filtered.forEach(item => { const s = item.sub || "Прочее"; if (!groups[s]) groups[s] = []; groups[s].push(item); });
+            Object.keys(groups).sort().forEach(s => {
+                const header = document.createElement('div'); header.className = 'group-header'; header.innerText = `${s}`; container.appendChild(header);
+                groups[s].forEach(item => {
                     const div = document.createElement('div'); div.className = 'item-card'; div.onclick = () => showItemDetail(item.id);
-                    const status = item.status === 'repair' ? `<div class="status-badge">РЕМОНТ</div>` : '';
-                    div.innerHTML = `${status}<div class="item-image-container"><img src="${item.photo}" class="item-image"></div><div class="item-content"><strong style="font-size:1.1rem;">${item.name}</strong><br><span style="font-size:0.85rem; color:#666;">ID: ${item.id} | 📍 ${item.location} | 📂 ${item.sub}</span><br><span style="font-size:0.8rem; color:#888;">Добавлен: ${item.addedDate || '---'}</span><div class="qr-wrapper" style="display:none;"><div id="qr-${item.id}"></div></div></div>`;
+                    const status = item.status === 'repair' ? '<div class="status-badge">РЕМОНТ</div>' : '';
+                    div.innerHTML = `${status}<div class="item-image-container"><img src="${item.photo}" class="item-image"></div><div class="item-content"><strong style="font-size:1.1rem;">${item.name}</strong><br><span style="font-size:0.9rem; color:var(--oko-green); font-weight:bold;">Количество: ${item.qty} шт.</span><br><span style="font-size:0.85rem; color:#666;">ID: ${item.id} | 📍 ${item.location}</span></div>`;
                     container.appendChild(div);
                 });
             });
@@ -321,144 +300,123 @@
 
         function showItemDetail(id) {
             const item = items.find(i => i.id === id); if (!item) return;
-            // Считаем сколько таких же предметов в этой локации
-            const batchCount = items.filter(i => i.name === item.name && i.location === item.location && i.status === item.status).length;
+            const statusBtn = item.status === 'repair' ? `<button class="btn-action btn-green" onclick="handleStatus('${item.id}', 'ok')">✅ ВЕРНУТЬ В СТРОЙ</button>` : `
+                <div class="action-box">
+                    <label class="action-label">ОТПРАВКА В РЕМОНТ:</label>
+                    <input type="number" id="repairQty" class="search-box" value="1" max="${item.qty}" placeholder="Сколько шт?">
+                    <input type="text" id="repairReason" class="search-box" placeholder="Причина поломки">
+                    <button class="btn-action btn-danger" onclick="handleStatus('${item.id}', 'repair')">🔧 В РЕМОНТ</button>
+                </div>`;
             
-            const repairInfo = item.repairReason ? `<p style="color:red; font-weight:bold;">Причина: ${item.repairReason}</p>` : '';
-            
-            let actionButtons = '';
-            if (item.status === 'repair') {
-                actionButtons = `<button class="btn-action btn-green" onclick="bulkStatusChange('${item.id}', 'ok')" style="width:100%;">✅ ВЕРНУТЬ ИЗ РЕМОНТА (ВСЕ)</button>`;
-            } else {
-                actionButtons = `
-                    <div class="batch-controls">
-                        <span class="batch-title">УПРАВЛЕНИЕ ПАРТИЕЙ (Всего тут: ${batchCount} шт)</span>
-                        <input type="number" id="bulkQty" class="search-box" value="1" min="1" max="${batchCount}" style="margin-bottom:5px;">
-                        <input type="text" id="repairReasonInp" class="search-box" placeholder="Причина поломки (если в ремонт)">
-                        <button class="btn-action btn-danger" onclick="bulkStatusChange('${item.id}', 'repair')">🔧 ОТПРАВИТЬ В РЕМОНТ</button>
-                    </div>
-                `;
-            }
-
             document.getElementById('itemModalContent').innerHTML = `
                 <button class="close-btn" onclick="closeModal('itemModal')">&times;</button>
                 <div class="detail-photo-box"><img src="${item.photo}" class="detail-photo"></div>
-                <h2 style="color:var(--oko-green); margin-bottom:5px;">${item.name}</h2>
-                <div style="background:white; padding:15px; border:1px solid #ddd; margin-bottom:10px; font-size: 0.95rem;">
-                    <p>ID: ${item.id}</p><p>Локация: ${item.location}</p><p>Группа: ${item.sub}</p>
-                    ${repairInfo}
-                    <p><strong>Проверка: ${item.lastCheck} (${item.lastCheckBy || '---'})</strong></p>
-                    <hr style="margin:5px 0; opacity:0.2;"><p style="font-size:0.8rem; color:#888;">Добавил: ${item.createdBy || '---'}</p>
+                <h2 style="color:var(--oko-green)">${item.name}</h2>
+                <div style="background:white; padding:15px; border:1px solid #ddd; margin-bottom:10px;">
+                    <p><b>Кол-во: ${item.qty} шт.</b></p>
+                    <p>ID: ${item.id} | Группа: ${item.sub}</p>
+                    <p>Локация: ${item.location}</p>
+                    ${item.reason ? `<p style="color:red"><b>Причина: ${item.reason}</b></p>` : ''}
+                    <p>Проверка: ${item.lastCheck} (${item.lastCheckBy})</p>
                 </div>
                 <button class="btn-action btn-green" onclick="markCheck('${item.id}')">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
                 <button class="btn-action" onclick="openEditModal('${item.id}')">📦 ПЕРЕМЕСТИТЬ / ИЗМЕНИТЬ</button>
-                ${actionButtons}
-                <button class="btn-action" onclick="printQR('${item.id}')">ПЕЧАТЬ ОДНОГО QR</button>
-                <button class="btn-action btn-danger" onclick="deleteItem('${item.id}')">УДАЛИТЬ ЕДИНИЦУ</button>`;
+                ${statusBtn}
+                <button class="btn-action" onclick="printQR('${item.id}')">ПЕЧАТЬ QR (${item.qty} шт)</button>
+                <button class="btn-action btn-danger" onclick="deleteItem('${item.id}')">УДАЛИТЬ КАРТОЧКУ</button>`;
             document.getElementById('itemModal').classList.add('active');
         }
 
-        async function bulkStatusChange(id, newStatus) {
-            const item = items.find(i => i.id === id);
-            const qty = parseInt(document.getElementById('bulkQty')?.value) || 1;
-            const reason = document.getElementById('repairReasonInp')?.value || "";
+        async function handleStatus(id, newStat) {
+            const original = items.find(i => i.id === id);
             const user = localStorage.getItem('oko_user') || "---";
 
-            // Ищем подходящие предметы из партии
-            const targets = items.filter(i => i.name === item.name && i.location === item.location && i.status === item.status).slice(0, qty);
-            
-            document.getElementById('loader').style.display = 'flex';
-            for(let target of targets) {
-                await db.ref('inventory/' + target.id).update({ 
-                    status: newStatus, 
-                    repairReason: newStatus === 'repair' ? reason : '',
-                    updatedBy: user
-                });
+            if (newStat === 'repair') {
+                const rQty = parseInt(document.getElementById('repairQty').value) || 0;
+                const reason = document.getElementById('repairReason').value;
+                if (rQty <= 0) return alert("Укажите количество!");
+                
+                if (rQty < original.qty) {
+                    const newId = 'OKO-' + Math.floor(1000 + Math.random() * 9000);
+                    await db.ref('inventory/' + newId).set({ ...original, id: newId, qty: rQty, status: 'repair', reason: reason, updatedBy: user });
+                    await db.ref('inventory/' + id).update({ qty: original.qty - rQty });
+                } else {
+                    await db.ref('inventory/' + id).update({ status: 'repair', reason: reason, updatedBy: user });
+                }
+            } else {
+                await db.ref('inventory/' + id).update({ status: 'ok', reason: '' });
             }
-            document.getElementById('loader').style.display = 'none';
             closeModal('itemModal');
         }
 
         function printQR(id) {
             const it = items.find(i => i.id === id); 
             const win = window.open('', '_blank');
-            win.document.write(`<html><head><title>${it.name}</title><style>body { font-family: serif; text-align: center; padding: 10px; } #q { display: inline-block; } .back-btn { display: block; margin: 10px auto; padding: 8px; background: #5C6041; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-decoration: none; font-size:12px; } @media print { .back-btn { display: none; } }</style><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script></head><body><button class="back-btn" onclick="window.close()">← НАЗАД</button><div id="q"></div><div style="font-size:10px; font-weight:bold;">${it.name}<br>${it.id}</div><script>new QRCode(document.getElementById('q'), {text: "${window.location.origin + window.location.pathname}?id=${id}", width: 80, height: 80}); window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); };<\/script></body></html>`);
+            win.document.write(`<html><head><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><style>.q-box{ display:inline-block; margin:10px; text-align:center; page-break-inside:avoid; width:100px; font-family:sans-serif; font-size:10px; border:1px solid #eee; padding:5px; }</style></head><body><div id="grid"></div><script>
+                const grid = document.getElementById('grid');
+                for(let i=0; i<${it.qty}; i++) {
+                    const d = document.createElement('div'); d.className='q-box';
+                    d.innerHTML = '<div>${it.name}</div><div id="q'+i+'"></div><div>${it.id}</div>';
+                    grid.appendChild(d);
+                    new QRCode(document.getElementById('q'+i), {text: "${window.location.origin + window.location.pathname}?id=${id}", width: 80, height: 80});
+                }
+                window.onload = () => setTimeout(() => { window.print(); window.close(); }, 700);
+            <\/script></body></html>`);
             win.document.close();
         }
 
         function printAllQR() {
-            if (items.length === 0) return alert("Пусто!");
             const pWin = window.open('', '_blank');
-            pWin.document.write(`<html><head><title>Печать всех QR</title><style>body { font-family: sans-serif; display: flex; flex-wrap: wrap; justify-content: flex-start; padding: 10px; } .qr-card { border: 0.5px solid #eee; padding: 5px; margin: 3px; text-align: center; width: 90px; page-break-inside: avoid; } .qr-name { font-weight: bold; font-size: 8px; height: 20px; overflow: hidden; line-height:10px; } .qr-id { font-size: 7px; color: #333; } .back-btn { position: fixed; top: 10px; right: 10px; padding: 10px; background: #5C6041; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; z-index: 9999; } @media print { .back-btn { display: none; } }</style><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script></head><body><button class="back-btn" onclick="window.close()">← ВЕРНУТЬСЯ</button><div id="grid" style="display: flex; flex-wrap: wrap;"></div><script>const data = ${JSON.stringify(items)}; const grid = document.getElementById('grid'); const url = "${window.location.origin + window.location.pathname}"; data.forEach(it => { const div = document.createElement('div'); div.className = 'qr-card'; div.innerHTML = '<div class="qr-name">' + it.name + '</div><div id="q-' + it.id + '"></div><div class="qr-id">' + it.id + '</div>'; grid.appendChild(div); new QRCode(document.getElementById('q-' + it.id), { text: url + "?id=" + it.id, width: 75, height: 75 }); }); window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 1500); };<\/script></body></html>`);
+            pWin.document.write(`<html><head><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><style>.q-box{ display:inline-block; margin:5px; text-align:center; page-break-inside:avoid; width:90px; font-family:sans-serif; font-size:8px; border:0.5px solid #ccc; padding:3px; }</style></head><body><div id="grid"></div><script>
+                const data = ${JSON.stringify(items)};
+                const grid = document.getElementById('grid');
+                data.forEach(it => {
+                    for(let i=0; i<it.qty; i++) {
+                        const d = document.createElement('div'); d.className='q-box';
+                        d.innerHTML = '<div>'+it.name+'</div><div id="q'+it.id+i+'"></div><div>'+it.id+'</div>';
+                        grid.appendChild(d);
+                        new QRCode(document.getElementById('q'+it.id+i), {text: "${window.location.origin + window.location.pathname}?id="+it.id, width: 75, height: 75});
+                    }
+                });
+                window.onload = () => setTimeout(() => { window.print(); window.close(); }, 1500);
+            <\/script></body></html>`);
             pWin.document.close();
-            document.getElementById('fabMenu').classList.remove('active');
         }
 
         function updateDropdowns() { ['addSubCatSelect', 'editSubCatSelect'].forEach(id => { const sel = document.getElementById(id); if(!sel) return; sel.innerHTML = '<option value="">-- Подгруппа --</option>'; subCategories.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`); sel.innerHTML += '<option value="NEW" style="color:blue;">+ НОВАЯ</option>'; }); }
         function checkNewSub(type) { const val = document.getElementById(type === 'add' ? 'addSubCatSelect' : 'editSubCatSelect').value; document.getElementById(type === 'add' ? 'addCustomSub' : 'editCustomSub').style.display = (val === 'NEW') ? 'block' : 'none'; }
-        function setStatFilter(s) { globalStatusFilter = s; if (s === 'all') document.getElementById('searchInput').value = ''; renderItems(); updateStats(); }
+        function setStatFilter(s) { globalStatusFilter = s; renderItems(); updateStats(); }
         function filterByLoc(l) { const inp = document.getElementById('searchInput'); inp.value = (inp.value === l) ? '' : l; renderItems(); }
-        
-        function openAddModal() { 
-            document.getElementById('addId').value = 'OKO-' + Math.floor(1000 + Math.random() * 9000); 
-            document.getElementById('fabMenu').classList.remove('active'); 
-            document.getElementById('addModal').classList.add('active'); 
-        }
-        
+        function openAddModal() { document.getElementById('addId').value = 'OKO-' + Math.floor(1000 + Math.random() * 9999); document.getElementById('fabMenu').classList.remove('active'); document.getElementById('addModal').classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-        
-        function openEditModal(id) { 
-            const it = items.find(i => i.id === id); 
-            const batchCount = items.filter(i => i.name === it.name && i.location === it.location && i.status === 'ok').length;
-            
-            document.getElementById('editItemTargetId').value = id; 
-            document.getElementById('editItemName').value = it.name; 
-            document.getElementById('editItemLocation').value = it.location; 
-            document.getElementById('editQtyAction').max = batchCount;
-            document.getElementById('editQtyAction').value = 1;
-            document.getElementById('batchEditInfo').innerText = `В локации "${it.location}" найдено: ${batchCount} шт.`;
-            document.getElementById('editSubCatSelect').value = subCategories.includes(it.sub) ? it.sub : ""; 
-            document.getElementById('editModal').classList.add('active'); 
-        }
-
+        function openEditModal(id) { const it = items.find(i => i.id === id); document.getElementById('editItemTargetId').value = id; document.getElementById('editItemName').value = it.name; document.getElementById('editItemLocation').value = it.location; document.getElementById('moveQty').value = 0; document.getElementById('moveQty').max = it.qty; document.getElementById('editModal').classList.add('active'); }
         function markCheck(id) { const user = localStorage.getItem('oko_user') || "---"; db.ref('inventory/' + id).update({ lastCheck: new Date().toLocaleDateString('ru-RU'), lastCheckBy: user }); closeModal('itemModal'); }
-        async function deleteItem(id) { if (confirm("Удалить эту единицу?")) { await db.ref('inventory/' + id).remove(); closeModal('itemModal'); } }
+        async function deleteItem(id) { if (confirm("Удалить карточку целиком?")) { await db.ref('inventory/' + id).remove(); closeModal('itemModal'); } }
 
         function updateStats() {
-            document.getElementById('totalItems').innerText = items.length; 
-            document.getElementById('okItems').innerText = items.filter(i => i.status === 'ok').length; 
-            document.getElementById('repairItems').innerText = items.filter(i => i.status === 'repair').length; 
-            document.getElementById('locHall').innerText = items.filter(i => i.location === 'Зал').length; 
-            document.getElementById('locKitchen').innerText = items.filter(i => i.location === 'Кухня').length; 
-            document.getElementById('locBar').innerText = items.filter(i => i.location === 'Бар').length; 
-            document.getElementById('locWh').innerText = items.filter(i => i.location === 'Склад').length;
+            let total = 0, ok = 0, rep = 0, h = 0, k = 0, b = 0, s = 0;
+            items.forEach(i => {
+                total += i.qty;
+                if (i.status === 'ok') ok += i.qty; else rep += i.qty;
+                if (i.location === 'Зал') h += i.qty;
+                if (i.location === 'Кухня') k += i.qty;
+                if (i.location === 'Бар') b += i.qty;
+                if (i.location === 'Склад') s += i.qty;
+            });
+            document.getElementById('totalItems').innerText = total; document.getElementById('okItems').innerText = ok; document.getElementById('repairItems').innerText = rep; document.getElementById('locHall').innerText = h; document.getElementById('locKitchen').innerText = k; document.getElementById('locBar').innerText = b; document.getElementById('locWh').innerText = s;
             
+            const now = new Date(); const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
             const subContainer = document.getElementById('subStatsContent'); subContainer.innerHTML = '';
             const allSubs = [...new Set(items.map(i => i.sub || "Прочее"))].sort();
-            
-            const now = new Date(); 
-            const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-            allSubs.forEach(subName => {
-                const currentCount = items.filter(i => i.sub === subName).length;
-                const prevCount = items.filter(i => { 
-                    if (i.sub !== subName) return false; 
-                    if (!i.addedDate) return true; 
-                    const parts = i.addedDate.split('.'); 
-                    const d = new Date(parts[2], parts[1] - 1, parts[0]); 
-                    return d < startOfCurrentMonth; 
-                }).length;
-                
-                const row = document.createElement('div'); 
-                row.className = 'sub-stat-row'; 
-                row.innerHTML = `<span class="sub-stat-name">${subName}</span><span class="sub-stat-counts">${prevCount} шт &rarr; ${currentCount} шт</span>`; 
-                subContainer.appendChild(row);
+            allSubs.forEach(sn => {
+                const cur = items.filter(i => i.sub === sn).reduce((acc, i) => acc + i.qty, 0);
+                const prev = items.filter(i => { if (i.sub !== sn) return false; const p = i.addedDate.split('.'); const d = new Date(p[2], p[1] - 1, p[0]); return d < startOfCurrentMonth; }).reduce((acc, i) => acc + i.qty, 0);
+                const row = document.createElement('div'); row.className = 'sub-stat-row'; row.innerHTML = `<span class="sub-stat-name">${sn}</span><span class="sub-stat-counts">${prev} &rarr; ${cur}</span>`; subContainer.appendChild(row);
             });
         }
-
         function openScanner() { document.getElementById('scannerModal').classList.add('active'); html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, t => { const id = t.includes('?id=') ? t.split('?id=')[1] : t; closeScanner(); showItemDetail(id); }); }
         function closeScanner() { if (html5QrCode) html5QrCode.stop(); closeModal('scannerModal'); }
-        function exportToExcel() { const data = items.map(i => ({ ID: i.id, Имя: i.name, Локация: i.location, Группа: i.sub, Статус: i.status, Проверил: i.lastCheckBy || '---', Дата_проверки: i.lastCheck })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inventory"); XLSX.writeFile(wb, "OKO_Cloud.xlsx"); }
+        function exportToExcel() { const data = items.map(i => ({ ID: i.id, Имя: i.name, Кол_во: i.qty, Локация: i.location, Группа: i.sub, Статус: i.status, Проверил: i.lastCheckBy, Дата: i.lastCheck })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inventory"); XLSX.writeFile(wb, "OKO_Cloud.xlsx"); }
     </script>
 </body>
 </html>

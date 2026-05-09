@@ -226,7 +226,12 @@
             try {
                 let photo = 'https://via.placeholder.com/400x200?text=НЕТ+ФОТО';
                 if (file) photo = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); });
-                await db.ref('inventory/' + id).set({ id, name, qty, location: loc, sub: sub || "Прочее", photo, status: 'ok', lastCheck: 'Нет', lastCheckBy: '---', addedDate: new Date().toLocaleDateString('ru-RU'), createdBy: user, updatedBy: user });
+                await db.ref('inventory/' + id).set({ 
+                    id, name, qty, location: loc, sub: sub || "Прочее", photo, status: 'ok', 
+                    lastCheck: 'Нет', lastCheckBy: '---', 
+                    addedDate: new Date().toLocaleDateString('ru-RU'), 
+                    createdBy: user, updatedBy: user 
+                });
                 document.getElementById('loader').style.display = 'none'; closeModal('addModal');
             } catch (e) { document.getElementById('loader').style.display = 'none'; alert(e.message); }
         }
@@ -275,7 +280,11 @@
                 <p><b>Кол-во: ${item.qty || 1} шт.</b> | Локация: ${item.location}</p>
                 <p>ID: ${item.id} | Группа: ${item.sub}</p>
                 ${item.reason ? `<p style="color:red">Причина: ${item.reason}</p>` : ''}
-                <hr style="margin:10px 0;">
+                <hr style="margin:10px 0; opacity:0.3;">
+                <p style="font-size:0.8rem; color:#666;">Добавил: ${item.createdBy || '---'}</p>
+                <p style="font-size:0.8rem; color:#666;">Изменил: ${item.updatedBy || '---'}</p>
+                <p style="font-size:0.8rem; color:#666;">Проверка: ${item.lastCheck || 'Нет'} (${item.lastCheckBy || '---'})</p>
+                <hr style="margin:10px 0; opacity:0.3;">
                 <button class="btn-action btn-green" onclick="markCheck('${item.id}')">ИНВЕНТАРИЗАЦИЯ ПРОЙДЕНА</button>
                 <button class="btn-action" onclick="openEditModal('${item.id}')">📦 ПЕРЕМЕСТИТЬ / ИЗМЕНИТЬ</button>
                 ${statusBtn}
@@ -293,9 +302,9 @@
                 if (rQty < (original.qty || 1)) {
                     const newId = 'OKO-' + Math.floor(1000 + Math.random() * 9000);
                     await db.ref('inventory/' + newId).set({ ...original, id: newId, qty: rQty, status: 'repair', reason: reason, updatedBy: user });
-                    await db.ref('inventory/' + id).update({ qty: (original.qty || 1) - rQty });
+                    await db.ref('inventory/' + id).update({ qty: (original.qty || 1) - rQty, updatedBy: user });
                 } else await db.ref('inventory/' + id).update({ status: 'repair', reason: reason, updatedBy: user });
-            } else await db.ref('inventory/' + id).update({ status: 'ok', reason: '' });
+            } else await db.ref('inventory/' + id).update({ status: 'ok', reason: '', updatedBy: user });
             closeModal('itemModal');
         }
 
@@ -307,8 +316,8 @@
             if (moveQty > 0 && moveQty < (original.qty || 1)) {
                 const newId = 'OKO-' + Math.floor(1000 + Math.random() * 9000);
                 await db.ref('inventory/' + newId).set({ ...original, id: newId, qty: moveQty, location: document.getElementById('editItemLocation').value, updatedBy: user });
-                await db.ref('inventory/' + id).update({ qty: (original.qty || 1) - moveQty, name: document.getElementById('editItemName').value });
-            } else await db.ref('inventory/' + id).update({ name: document.getElementById('editItemName').value, location: document.getElementById('editItemLocation').value });
+                await db.ref('inventory/' + id).update({ qty: (original.qty || 1) - moveQty, name: document.getElementById('editItemName').value, updatedBy: user });
+            } else await db.ref('inventory/' + id).update({ name: document.getElementById('editItemName').value, location: document.getElementById('editItemLocation').value, updatedBy: user });
             closeModal('editModal');
         }
 
